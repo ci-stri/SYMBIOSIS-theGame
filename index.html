@@ -1,0 +1,306 @@
+<title>Emmi und Armi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:ital,wght@0,400;0,700;1,400&family=Caveat+Brush&display=swap">
+<style>
+/* Layout: comic book pages on paper, 6-column panel grid, text bubbles under each picture; one theme on purpose (paper + ink) */
+:root{
+  --desk:#d9d2c3;      /* table under the book */
+  --paper:#fbf8f1;     /* page */
+  --ink:#221d18;       /* outlines, text */
+  --muted:#6f665b;
+  --caption:#f6e7a6;   /* narration boxes */
+  --glow:#e8742c;      /* myzel glow / accent */
+  --moss:#3f7d52;
+  --easy:#7cbf6a; --mid:#e9c43f; --hard:#ec8a3a;
+  --ok:#2f8a4a; --bad:#c2412f; --typed:#1f5a35;
+  --f-display:"Caveat Brush","Marker Felt","Comic Sans MS",cursive;
+  --f-body:"Andika","Trebuchet MS","Segoe UI",sans-serif;
+  color-scheme:light;
+}
+body{background:var(--desk);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.35;padding-inline:16px;padding-block:0 48px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--desk);padding-block:10px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;max-width:1100px;margin-inline:auto}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:2rem;margin:0;line-height:1}
+.brand span{color:var(--muted);font-size:.9rem}
+.chap select{font:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);padding:5px 8px;max-width:100%}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+nav{display:flex;gap:6px}
+nav button{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:6px 16px;cursor:pointer;font-weight:700}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+
+.bar{max-width:1100px;margin:0 auto 12px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:8px 14px}
+.bar b{font-variant-numeric:tabular-nums}
+.bar .go{margin-left:auto;display:flex;gap:8px}
+.btn{border:2px solid var(--ink);border-radius:8px;background:var(--glow);color:#fff;font-weight:700;padding:6px 14px;cursor:pointer}
+.btn.ghost{background:var(--paper);color:var(--ink)}
+.legend{display:flex;gap:12px;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+#msg{font-weight:700}
+
+.book{max-width:1100px;margin-inline:auto;display:grid;gap:28px}
+.page{background:var(--paper);padding:18px;border-radius:3px;box-shadow:0 1px 0 #0002,0 12px 28px -14px #0006;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;position:relative}
+.page .no{position:absolute;bottom:4px;right:14px;font-family:var(--f-display);color:var(--muted)}
+.panel{grid-column:span 3;border:3px solid var(--ink);background:var(--paper);display:flex;flex-direction:column;min-width:0}
+.panel.w{grid-column:span 6}
+.panel.t{grid-column:span 4}.panel.n{grid-column:span 2}
+.pic{position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;background:#ccc;border-bottom:3px solid var(--ink)}
+.pic img{cursor:zoom-in}
+.panel.w .pic{aspect-ratio:21/9}
+.pic img{width:100%;height:100%;object-fit:cover;display:block}
+.pic .missing{position:absolute;inset:0;display:grid;place-items:center;background:repeating-linear-gradient(45deg,#e9e3d6 0 14px,#f2ede2 14px 28px);font-family:var(--f-display);font-size:1.4rem;color:var(--muted)}
+.cap{position:absolute;left:10px;top:10px;max-width:min(70%,30rem);background:var(--caption);border:2px solid var(--ink);padding:6px 10px;font-size:.95rem;box-shadow:3px 3px 0 var(--ink)}
+.cap p{margin:0}.cap p+p{margin-top:4px}
+.talk{display:flex;flex-wrap:wrap;gap:10px 12px;padding:12px;align-items:flex-start}
+.b{position:relative;background:#fff;border:2px solid var(--ink);border-radius:18px;padding:7px 12px 8px;max-width:100%;min-width:0}
+.b::before{content:"";position:absolute;top:-10px;left:22px;border:8px solid transparent;border-bottom:10px solid var(--ink);border-top:0}
+.b::after{content:"";position:absolute;top:-6px;left:24px;border:6px solid transparent;border-bottom:8px solid #fff;border-top:0}
+.b.think{border-style:dashed;border-radius:24px}
+.b.think::before,.b.think::after{display:none}
+.b.note{background:var(--caption);border-radius:2px;font-size:.92rem}
+.b.note::before,.b.note::after{display:none}
+.who{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
+.who .say{margin-left:auto}
+.line{margin:0}
+.say{border:0;background:none;padding:0;width:22px;height:22px;cursor:pointer;color:var(--muted);flex:none}
+.say svg{width:18px;height:18px}
+
+.v{cursor:pointer;font-weight:700;border-bottom:3px solid var(--easy);padding-inline:1px}
+.v.m{border-color:var(--mid)}.v.h{border-color:var(--hard)}
+.gap{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap;vertical-align:baseline}
+.gap{position:relative}
+.gap input{font:inherit;font-weight:700;color:var(--typed);-webkit-text-fill-color:var(--typed);caret-color:var(--typed);opacity:1;border:0;border-bottom:2px dashed var(--ink);background:#f4efe4;padding:0 4px;min-width:3ch;max-width:100%;border-radius:3px}
+.gap .tick{font-size:.85rem;color:var(--typed);font-weight:700;opacity:0;transform:scale(.4);transition:opacity .2s,transform .25s cubic-bezier(.3,1.6,.5,1)}
+.gap.filled .tick{opacity:1;transform:scale(1)}
+.gap input.ok{background:#d9efdd;border-bottom:2px solid var(--ok)}
+.gap input.no{background:#f8dcd6;border-bottom:2px solid var(--bad)}
+.gap input.shown{background:#eee;color:var(--muted);border-bottom:2px solid var(--muted)}
+.hint{font-size:.78rem;color:var(--muted);font-weight:400}
+
+#key{max-width:760px;margin-inline:auto;background:var(--paper);padding:20px;border:3px solid var(--ink)}
+#key h2{font-family:var(--f-display);font-weight:400;font-size:1.8rem;margin:0 0 4px}
+#key p{color:var(--muted);margin:0 0 12px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+td{padding:7px 8px;border-bottom:1px solid #0001;vertical-align:middle}
+td.en{font-weight:700}
+.lvl{display:inline-block;width:12px;height:12px;border-radius:50%}
+
+.endcard{background:var(--paper);border:3px solid var(--ink);padding:16px 18px;display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between}
+.endcard p{margin:0;max-width:60ch;min-width:0}
+#key .ans{display:inline-block;font-weight:700;padding:0 6px;border-radius:4px}
+#key .ans.ok{background:#d9efdd;color:var(--ok)}
+#key .ans.no{background:#f8dcd6;color:var(--bad)}
+#key .ans.empty{background:#eee;color:var(--muted);font-weight:400}
+#key .sum{font-size:1.15rem;font-weight:700;color:var(--ink)}
+#key .ctx{color:var(--muted);font-size:.92rem}
+#key h3{font-family:var(--f-display);font-weight:400;font-size:1.5rem;margin:22px 0 4px}
+#key td.st{width:28px;font-weight:700;text-align:center}
+.prac input{font:inherit;font-weight:700;color:var(--typed);-webkit-text-fill-color:var(--typed);border:2px solid var(--ink);border-radius:6px;padding:2px 6px;width:12ch;background:#fff}
+.prac input.ok{background:#d9efdd}.prac input.no{background:#f8dcd6}
+.tap{touch-action:manipulation;-webkit-tap-highlight-color:transparent;flex:1 1 40px;align-self:stretch;min-height:40px}
+.lab{position:absolute;right:6px;top:6px;background:#1d4f7a;color:#fff;font:700 .8rem/1 var(--f-body);padding:4px 7px;border-radius:6px;z-index:2;pointer-events:none}
+body.review{--desk:#cfe2f1}
+.donebox{border:3px solid var(--ink);border-radius:12px;background:var(--paper);color:var(--ink);padding:22px;max-width:min(92vw,440px)}
+.donebox::backdrop{background:#0008}
+.donebox h2{font-family:var(--f-display);font-weight:400;font-size:2.2rem;margin:0 0 6px}
+.donebox .go{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.reviewnote{background:#1d4f7a!important;position:fixed;left:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));margin:0;background:var(--ink);color:var(--paper);font-size:.8rem;padding:4px 10px;border-radius:999px}
+#tip{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;z-index:20;max-width:calc(100% - 32px);font-size:1rem}
+#zoom{border:0;padding:0;background:transparent;max-width:min(96vw,1400px)}
+#zoom::backdrop{background:#000c}
+#zoom img{display:block;max-width:100%;max-height:88vh;border:3px solid var(--paper)}
+#zoom button{position:absolute;top:8px;right:8px}
+
+@media (max-width:760px){
+  .panel,.panel.t,.panel.n{grid-column:span 6}
+  .panel.w .pic{aspect-ratio:4/3}
+  .page{padding:10px}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion:no-preference){ .pic img{transition:transform .4s} .pic:hover img{transform:scale(1.02)} }
+</style>
+
+<header>
+  <div class="brand"><h1>Emmi &amp; Armi</h1><label class="chap"><span class="sr">Chapter</span><select id="chsel"></select></label></div><div class="tap" id="tapzone" aria-hidden="true"></div>
+  <nav aria-label="Mode">
+    <button data-mode="read" aria-selected="true">Read</button>
+    <button data-mode="gaps" aria-selected="false">Fill in</button>
+    <button data-mode="key" aria-selected="false">Answers</button>
+  </nav>
+</header>
+
+<div class="bar" id="readbar">
+  <span>Tap a <b>bold word</b> to hear it. Tap the speaker to hear the whole line.</span>
+  <span class="legend"><span><i style="background:var(--hard)"></i>hard</span><span><i style="background:var(--mid)"></i>medium</span><span><i style="background:var(--easy)"></i>easy</span></span>
+</div>
+<div class="bar" id="gapbar" hidden>
+  <span>Filled <b id="cnt">0 / 0</b></span><span id="msg"></span>
+  <span class="go"><button class="btn" id="toKey">Check in Answers</button></span>
+</div>
+
+<main class="book" id="book"></main>
+<section id="key" hidden></section>
+
+<div id="tip" hidden></div>
+<dialog id="done" class="donebox"><h2>Chapter done!</h2><p></p><div class="go"><button class="btn ghost" id="stay">Stay here</button><button class="btn" id="goNext">Next chapter</button></div></dialog>
+<p id="reviewnote" class="reviewnote" hidden>Review mode</p>
+<dialog id="zoom"><img alt=""><button class="btn ghost" id="zclose">Close</button></dialog>
+
+<script>
+const VOC={"hello": ["e", "Hallo"], "good morning": ["e", "Guten Morgen"], "my name is": ["e", "Ich heiße"], "what about you": ["h", "Und du?"], "sorry": ["e", "Entschuldigung"], "here's": ["h", "hier ist"], "nice to meet you": ["e", "Freut mich, dich kennenzulernen"], "how are you": ["e", "Wie geht's?"], "i'm fine, thanks": ["e", "Gut, danke"], "are you": ["m", "Bist du"], "you're lucky": ["h", "Du hast Glück"], "i'm eleven years old": ["e", "Ich bin elf Jahre alt"], "how old are you": ["e", "Wie alt bist du?"], "yes, i am": ["m", "Ja, das bin ich"], "where are you from": ["e", "Woher kommst du?"], "i'm from": ["e", "Ich komme aus"], "welcome to": ["e", "Willkommen in"], "it's called": ["h", "Er/Sie/Es heißt"], "please": ["e", "bitte"], "here you are": ["m", "Hier, bitte"], "thank you": ["e", "Danke"], "here are": ["h", "Hier sind"], "this is": ["e", "Das ist"], "bye": ["e", "Tschüs"], "see you": ["e", "Bis bald"], "thanks": ["e", "Danke"], "no, that's wrong": ["e", "Nein, das ist falsch."], "yes, that's right": ["e", "Ja, das ist richtig."], "your turn": ["e", "du bist dran"], "spell": ["m", "buchstabieren"], "spelling": ["e", "die Rechtschreibung"], "let me show you": ["h", "Lass mich dir … zeigen"], "let us sing": ["m", "Lasst uns singen"], "simon says": ["m", "Simon sagt"], "listen, please": ["h", "Hört zu, bitte"], "word": ["h", "das Wort"], "words": ["h", "die Wörter"], "phrase": ["h", "der Ausdruck, die Redewendung"], "like words in other languages": ["h", "wie Wörter in anderen Sprachen"], "language": ["m", "die Sprache"], "english": ["e", "Englisch"], "french": ["e", "Französisch"], "problem": ["e", "das Problem"], "one": ["e", "eins"], "two": ["e", "zwei"], "three": ["e", "drei"], "four": ["e", "vier"], "five": ["e", "fünf"], "six": ["e", "sechs"], "seven": ["e", "sieben"], "eight": ["e", "acht"], "nine": ["e", "neun"], "ten": ["e", "zehn"], "eleven": ["e", "elf"], "twelve": ["e", "zwölf"], "colour": ["e", "die Farbe"], "colours": ["e", "die Farben"], "red": ["e", "rot"], "yellow": ["e", "gelb"], "blue": ["e", "blau"], "green": ["e", "grün"], "brown": ["m", "braun"], "orange": ["m", "orange"], "grey": ["m", "grau"], "pink": ["m", "pink, rosa"], "purple": ["m", "lila"], "white": ["m", "weiß"], "black": ["m", "schwarz"], "day": ["m", "der Tag"], "days": ["m", "die Tage"], "the days of the week": ["h", "die Wochentage"], "monday": ["h", "Montag"], "tuesday": ["h", "Dienstag"], "wednesday": ["h", "Mittwoch"], "thursday": ["h", "Donnerstag"], "friday": ["h", "Freitag"], "saturday": ["h", "Samstag"], "sunday": ["h", "Sonntag"], "on mondays": ["h", "montags"], "on tuesday": ["h", "am Dienstag"], "today": ["e", "heute"], "morning": ["m", "der Morgen"], "hour": ["e", "die Stunde"], "an hour": ["e", "eine Stunde"], "now": ["e", "jetzt"], "sometimes": ["e", "manchmal"], "again": ["m", "wieder; noch einmal"], "school": ["e", "die Schule"], "at school": ["e", "in der Schule"], "primary school": ["e", "die Grundschule"], "class": ["e", "die Klasse"], "classroom": ["e", "das Klassenzimmer"], "year": ["e", "der Jahrgang"], "student": ["e", "Schüler/in"], "class teacher": ["m", "Klassenlehrer/in"], "mr lee": ["e", "Herr Lee"], "mrs lee": ["e", "Frau Lee"], "teach": ["h", "unterrichten"], "art": ["e", "die Kunst"], "history": ["m", "die Geschichte"], "poem": ["h", "das Gedicht"], "uniform": ["h", "die Schuluniform"], "blazer": ["h", "der Blazer"], "tie": ["m", "die Krawatte"], "board": ["e", "die Tafel"], "chair": ["e", "der Stuhl"], "desk": ["e", "der Schreibtisch"], "book": ["e", "das Buch"], "exercise book": ["e", "das Schulheft"], "schoolbag": ["e", "die Schultasche"], "pencil case": ["e", "das Federmäppchen"], "pencil": ["e", "der Bleistift"], "pen": ["e", "der Stift, der Füller"], "marker": ["e", "der Textmarker"], "rubber": ["e", "der Radiergummi"], "ruler": ["e", "das Lineal"], "sharpener": ["e", "der Anspitzer"], "family": ["e", "die Familie"], "parents": ["e", "die Eltern"], "father": ["e", "der Vater"], "mother": ["e", "die Mutter"], "dad": ["e", "der Papa"], "mum": ["e", "die Mama"], "brother": ["e", "der Bruder"], "brothers": ["e", "die Brüder"], "sister": ["e", "die Schwester"], "sisters": ["e", "die Schwestern"], "grandpa": ["e", "der Opa"], "grandma": ["e", "die Oma"], "uncle": ["e", "der Onkel"], "aunt": ["e", "die Tante"], "cousin": ["e", "der Cousin, die Cousine"], "cousins": ["e", "die Cousins"], "divorced": ["e", "geschieden"], "boy": ["e", "der Junge"], "girl": ["e", "das Mädchen"], "my friend": ["e", "mein Freund / meine Freundin"], "everyone": ["m", "jeder; alle"], "postman": ["e", "der Postbote"], "smile": ["e", "das Lächeln"], "animal": ["e", "das Tier"], "animals": ["e", "die Tiere"], "pet": ["e", "das Haustier"], "dog": ["e", "der Hund"], "cat": ["e", "die Katze"], "rabbit": ["e", "das Kaninchen"], "guinea pig": ["e", "das Meerschweinchen"], "hamster": ["e", "der Hamster"], "rat": ["e", "die Ratte"], "budgie": ["e", "der Wellensittich"], "parrot": ["e", "der Papagei"], "fish": ["e", "der Fisch"], "snake": ["e", "die Schlange"], "spider": ["e", "die Spinne"], "bee": ["e", "die Biene"], "seagull": ["e", "die Möwe"], "sea": ["e", "das Meer"], "by the sea": ["m", "am Meer"], "beach": ["e", "der Strand"], "sand": ["e", "der Sand"], "stone": ["e", "der Stein"], "sky": ["e", "der Himmel"], "tree": ["e", "der Baum"], "flower": ["e", "die Blume"], "flowers": ["e", "die Blumen"], "grass": ["e", "das Gras"], "garden": ["e", "der Garten"], "the gardens are great": ["e", "die Gärten sind großartig"], "park": ["e", "der Park"], "city": ["e", "die Großstadt"], "town": ["e", "die Stadt"], "hometown": ["e", "die Heimatstadt"], "in england": ["e", "in England"], "germany": ["e", "Deutschland"], "world": ["e", "die Welt"], "street": ["e", "die Straße"], "road": ["e", "die (Land-)Straße"], "car": ["e", "das Auto"], "cars": ["e", "die Autos"], "bike": ["e", "das Fahrrad"], "bikes": ["e", "die Fahrräder"], "palace": ["e", "der Palast"], "a tour of": ["e", "ein Rundgang durch"], "place": ["e", "der Ort, der Platz"], "at home": ["e", "zu Hause"], "house": ["e", "das Haus"], "room": ["e", "das Zimmer"], "upstairs": ["h", "oben; nach oben"], "downstairs": ["h", "unten; nach unten"], "doorbell": ["h", "die Türklingel"], "doorbells": ["h", "die Türklingeln"], "bell": ["e", "die Klingel"], "at my place": ["h", "bei mir"], "phone": ["e", "das Handy"], "message": ["h", "die Nachricht"], "parcel": ["h", "das Paket"], "hobby": ["e", "das Hobby"], "football": ["e", "der Fußball"], "ball": ["e", "der Ball"], "balloons": ["e", "die Luftballons"], "balloon": ["e", "der Luftballon"], "game": ["e", "das Spiel"], "music": ["e", "die Musik"], "song": ["e", "das Lied"], "run": ["e", "rennen"], "runs": ["e", "rennt"], "swim": ["e", "schwimmen"], "dance": ["e", "tanzen"], "watch a film": ["e", "einen Film anschauen"], "hang out": ["e", "abhängen"], "thing": ["h", "die Sache, das Ding"], "something": ["h", "etwas"], "bag": ["e", "die Tasche"], "picture": ["h", "das Bild"], "dot": ["h", "der Punkt"], "dots": ["h", "die Punkte"], "double": ["h", "doppelt"], "sandwich": ["e", "das Sandwich"], "banana": ["e", "die Banane"], "big": ["e", "groß"], "very big": ["e", "sehr groß"], "small": ["e", "klein"], "hot": ["e", "heiß"], "cold": ["e", "kalt"], "new": ["e", "neu"], "cool": ["e", "cool"], "great": ["e", "großartig"], "awesome": ["h", "klasse, großartig"], "nice": ["e", "nett, schön"], "cute": ["e", "niedlich, süß"], "scary": ["e", "unheimlich, gruselig"], "boring": ["e", "langweilig"], "weird": ["h", "seltsam, komisch"], "wrong": ["e", "falsch"], "free": ["e", "frei"], "useful": ["h", "nützlich"], "sure": ["e", "sicher"], "other": ["e", "andere"], "see": ["e", "sehen"], "like": ["e", "mögen"], "don't like": ["e", "mag … nicht"], "have": ["e", "haben"], "don't have": ["e", "habe kein …"], "think": ["m", "denken, glauben"], "thinks": ["m", "denkt, glaubt"], "live": ["e", "leben, wohnen"], "can": ["e", "können"], "can't": ["e", "kann nicht"], "fly": ["e", "fliegen"], "find": ["e", "finden"], "go": ["e", "gehen"], "come": ["e", "kommen"], "know": ["e", "kennen; wissen"], "understand": ["m", "verstehen"], "listen": ["m", "zuhören"], "speak": ["e", "sprechen"], "read": ["e", "lesen"], "show": ["e", "zeigen"], "sit": ["e", "sitzen; sich setzen"], "need": ["e", "brauchen"], "needs": ["e", "braucht"], "what": ["e", "was"], "where": ["e", "wo? woher? wohin?"], "who": ["e", "wer?"], "why": ["e", "warum?"], "me": ["e", "mich; mir"], "we": ["e", "wir"], "us": ["e", "uns"], "your": ["e", "dein/e; euer/eure"], "our": ["e", "unser/e"], "her class": ["e", "ihre Klasse"], "you're": ["e", "du bist"], "she's": ["e", "sie ist"], "they're": ["e", "sie sind"], "they aren't": ["e", "sie sind nicht"], "isn't": ["e", "ist nicht"], "the": ["e", "der, die, das"], "too": ["e", "auch"], "here": ["e", "hier"], "with": ["e", "mit"], "for": ["e", "für"], "at": ["e", "an, bei, in"], "under": ["e", "unter"], "together": ["e", "zusammen"], "but": ["e", "aber"], "if": ["e", "wenn, falls"], "so": ["e", "also; so"], "maybe": ["e", "vielleicht"], "more": ["e", "mehr"], "some": ["e", "einige; etwas"], "a lot of": ["e", "viel, viele"], "lots of": ["e", "viele"], "no": ["e", "kein, keine"]};
+const CH=[{"id": "t0k01", "label": "Kapitel 1 · The Light", "pages": [[{"id": "k01p01", "n": ["Greystone. Grey houses, grey stones, grey sky. Boring. Even the pigeons are asleep."], "l": [], "c": "w", "img": true}, {"id": "k01p02", "n": ["But under the stones, something is awake."], "l": [], "c": "", "img": true}, {"id": "k01p03", "n": ["Then – PLOP! – a pink bubble grows out of the ground. Inside: a girl.", "She is new in the world. She knows zero words. Zero!"], "l": [["t", "Emmi", "Air. Nice."]], "c": "", "img": true}, {"id": "k01p04", "n": [], "l": [["s", "Emmi", "… [[Hello]]."], ["x", "", "Her first word. Not bad, right?"]], "c": "w", "img": true}], [{"id": "k01p05", "n": [], "l": [["s", "Emmi", "[[Hello]]! [[Good morning]]!"], ["x", "", "It is three o'clock at night. Whatever."], ["s", "Emmi", "[[My name is]] … Emmi! Yes! [[My name is]] Emmi! [[What about you]]?"], ["s", "Dog", "Woof."], ["s", "Emmi", "Woof? [[Sorry]], I don't understand."]], "c": "", "img": true}, {"id": "k01p06", "n": [], "l": [["s", "Emmi", "Oh, [[here's]] your name! F-L-U-F-F-I. Fluffi! [[Nice to meet you]], Fluffi! [[How are you]]?"], ["s", "Fluffi", "Woof! Woof!"], ["s", "Emmi", "[[I'm fine, thanks]]! … [[Are you]] alone?"], ["s", "Emmi", "Me too. OK, new plan: best friends. Deal?"], ["s", "Fluffi", "WOOF!"], ["s", "Emmi", "Eww. … Deal."]], "c": "", "img": true}, {"id": "k01p07", "n": [], "l": [["s", "Emmi", "[[Good morning]]! [[Good morning]]!"], ["x", "", "Nobody says “Good morning” back. Greystone is not a morning town."]], "c": "w", "img": true}, {"id": "k01p08", "n": [], "l": [["s", "Lina", "Hi! Wow, a horse! … No, a dog! [[You're lucky]]! I'm Lina. [[I'm eleven years old]]. [[What about you]]? [[How old are you]]?"], ["s", "Emmi", "I'm … one day old."], ["s", "Lina", "Ha ha. Very funny. [[Are you]] new here?"], ["s", "Emmi", "[[Yes, I am]]."], ["s", "Lina", "[[Where are you from]]?"], ["s", "Emmi", "[[I'm from]] … there."], ["s", "Lina", "From the street. Sure. [[Welcome to]] our town! [[It's called]] Greystone, because …"], ["s", "Emmi", "… it's very grey."], ["s", "Lina", "Exactly."]], "c": "w", "img": true}], [{"id": "k01p09", "n": [], "l": [["s", "Emmi", "Fluffi, no! Come back, [[please]]!"], ["s", "Flower Woman", "MY FLOWERS!"], ["s", "Emmi", "[[Sorry]]! [[Sorry]]! [[Sorry]]!"], ["s", "Flower Woman", "Hmph. [[You're lucky]]. I like dogs. … A little."]], "c": "w", "img": true}, {"id": "k01p10", "n": [], "l": [["s", "Lina", "[[Here you are]]. Breakfast."], ["s", "Emmi", "[[Thank you]]!"], ["s", "Lina", "… OK. And [[here are]] my friends. Jake, Zara, Tom – [[this is]] Emmi. And [[this is]] Fluffi."], ["s", "Jake", "Cool dog."], ["s", "Zara", "Hi, Emmi!"], ["s", "Lina", "We have to go. [[Bye]], Emmi! [[See you]]!"], ["s", "Emmi", "[[Bye]]! [[Thanks]], Lina!"]], "c": "w", "img": true}, {"id": "k01p11", "n": [], "l": [["s", "Tiny Voices", "[[Hello]], Emmi."], ["s", "Emmi", "Uh … [[hello]]?"], ["s", "Microbes", "We are the microbes. We live under the stones."], ["s", "Emmi", "Where is my family? Where is my mother?"], ["s", "Microbes", "Under the town lives a big, big fungus. [[It's called]] Armillaria. And she is your mother!"], ["s", "Emmi", "Armil … Armilla … way too long. I call her Armi."]], "c": "", "img": true}, {"id": "k01p12", "n": ["Then the ground moves. Just a little."], "l": [["s", "Emmi (quietly)", "Armi …?"]], "c": "", "img": true}]]}, {"id": "t0k02", "label": "Kapitel 2 · Small Wonders", "pages": [[{"id": "k02p01", "n": ["Sunday morning. Jake kicks his ball. BOING!"], "l": [["s", "Jake", "Whoa! Did you see that?"]], "c": "w", "img": true}, {"id": "k02p02", "n": [], "l": [["s", "Jake", "The square is a trampoline! [[Let me show you]]!"], ["s", "Lina", "No way."], ["s", "Jake", "Jump, Lina! It's [[your turn]]!"]], "c": "", "img": true}, {"id": "k02p03", "n": [], "l": [["s", "Tom", "[[One]], [[two]], [[three]] … JUMP!"], ["s", "Zara", "[[Let us sing]]! Boing, boing, boing!"], ["t", "Emmi", "Armi? Is that you?"]], "c": "", "img": true}, {"id": "k02p04", "n": [], "l": [["s", "Steve", "OK, kids. Off the square, [[please]]. We have to dig a hole."], ["s", "Gary", "Just a little hole. No [[problem]]."]], "c": "w", "img": true}], [{"id": "k02p05", "n": [], "l": [["s", "Steve", "What …?!"], ["s", "Gary", "Ha! [[Your turn]], Steve. Try again!"]], "c": "", "img": true}, {"id": "k02p06", "n": [], "l": [["s", "Ms Stone", "Interesting. The ground is soft."], ["s", "Emmi", "Something lives down there."], ["s", "Ms Stone", "Under MY square? I'm Ms Stone. S-T-O-N-E. Easy to [[spell]]."], ["s", "Emmi", "[[Nice to meet you]]. I'm Emmi. E-M-I."], ["s", "Ms Stone (smiling)", "[[No, that's wrong]]. Two M's, I think."]], "c": "", "img": true}, {"id": "k02p07", "n": [], "l": [["s", "Microbes", "[[Listen, please]]! School starts now. Come down, Emmi!"], ["s", "Emmi", "Down there? I'm too big!"], ["x", "", "Then the glow tickles her fingers. Emmi gets small. Smaller. As small as a grain of sand."]], "c": "w", "img": true}, {"id": "k02p08", "n": ["Down between the stones. Down into the ground. A whole world under Greystone!"], "l": [["s", "Emmi", "Wow …"], ["s", "Tardigrade", "Welcome to school, Emmi. You need more [[words]]. Many, many [[words]]."]], "c": "w", "img": true}], [{"id": "k02p09", "n": [], "l": [["s", "Microbes", "[[One]], [[two]], [[three]], [[four]], [[five]], [[six]] …"], ["s", "Emmi", "[[Seven]], [[eight]], [[nine]], [[ten]], [[eleven]], [[twelve]]!"], ["s", "Microbes", "[[Yes, that's right]]!"]], "c": "w", "img": true}, {"id": "k02p10", "n": [], "l": [["s", "Nematode", "Can you [[spell]] your name?"], ["s", "Emmi", "E-M-I."], ["s", "Nematode", "[[No, that's wrong]]!"], ["s", "Emmi", "E-M-M-I. Ugh. [[Spelling]] is a [[problem]]."]], "c": "w", "img": true}, {"id": "k02p11", "n": [], "l": [["s", "Mite", "Hello, Hallo, Bonjour – [[like words in other languages]]. Every [[language]] has its own [[words]]."], ["s", "Emmi", "What [[language]] do you speak?"], ["s", "Mite", "Soil. A little [[English]]. And a little [[French]]."], ["s", "Tardigrade", "New [[phrase]]: [[Simon says]]. [[Simon says]]: GLOW!"]], "c": "", "img": true}, {"id": "k02p12", "n": [], "l": [["s", "Microbes", "This is a [[colour]]. [[Red]]! [[Yellow]]! [[Blue]]!"], ["s", "Emmi", "Greystone has no [[colours]]. [[Let me show you]] something … this is … G … g …"], ["x", "", "She wants to say [[green]]. But the [[word]] is not there."], ["s", "Emmi (quietly)", "Where is my [[word]]?"]], "c": "", "img": true}]]}, {"id": "t0k03", "label": "Kapitel 3 · The Sleepless Night", "pages": [[{"id": "k03p01", "n": [], "l": [["s", "Lina", "[[Good morning]]! [[Today]] is [[Monday]]. [[On Mondays]] I go to [[school]]. Come with me!"], ["s", "Emmi (sleepy)", "What is [[Monday]]?"]], "c": "w", "img": true}, {"id": "k03p02", "n": [], "l": [["s", "Lina", "[[Monday]], [[Tuesday]], [[Wednesday]], [[Thursday]], [[Friday]], [[Saturday]], [[Sunday]]. [[The days of the week]]."], ["s", "Emmi", "I was born on [[Saturday]]!"], ["s", "Lina", "And [[today]] is [[Monday]]. So you are three [[days]] old."], ["s", "Emmi", "Three! I'm big [[now]]."]], "c": "", "img": true}, {"id": "k03p03", "n": [], "l": [["s", "Emmi", "[[Grey]], [[grey]], [[grey]] … a [[black]] cat! A [[white]] dog! [[Brown]] dungarees! And there – [[pink]]!"], ["s", "Lina", "[[Sometimes]] Greystone has colours. Not often."]], "c": "", "img": true}, {"id": "k03p04", "n": [], "l": [["s", "Lina", "This is my [[school]]. It's not a [[primary school]]. I'm in [[Year]] 5."], ["s", "Emmi", "[[Year]] 5?"], ["s", "Lina", "Yes. I'm a [[student]]. A big one."]], "c": "w", "img": true}], [{"id": "k03p05", "n": [], "l": [["s", "Lina", "And this is my [[class]]. And our [[classroom]]."], ["s", "Emmi", "Can Fluffi come in?"], ["s", "Lina", "No. Dogs can't be [[at school]]."], ["s", "Fluffi (outside)", "Woof!"]], "c": "", "img": true}, {"id": "k03p06", "n": [], "l": [["s", "Mrs Lee", "A new [[student]]? [[Good morning]]! You can sit with Lina [[today]]."], ["s", "Emmi", "[[Thank you]]!"]], "c": "", "img": true}, {"id": "k03p07", "n": ["One [[hour]]. Two hours. Three hours."], "l": [["t", "Emmi", "[[An hour]] is very, very long."]], "c": "w", "img": true}, {"id": "k03p08", "n": [], "l": [["s", "Emmi", "Can I come [[again]]?"], ["s", "Lina", "[[On Tuesday]]? Sure. Every [[morning]]!"], ["s", "Emmi", "Every [[morning]]? Hmm. Every [[morning]] is a lot."]], "c": "w", "img": true}], [{"id": "k03p09", "n": ["That night, nobody in Greystone can sleep."], "l": [["s", "Woman", "My phone is [[purple]]! And [[orange]]!"], ["s", "Man", "Mine says it's [[Sunday]]!"]], "c": "w", "img": true}, {"id": "k03p10", "n": [], "l": [["s", "Emmi", "Fluffi, come! [[Now]]!"], ["s", "Fluffi", "Grrrr …"], ["s", "Emmi", "OK, OK. [[Sorry]]."]], "c": "w", "img": true}, {"id": "k03p11", "n": [], "l": [["s", "Emmi", "Armi? What is it?"], ["s", "Microbes", "Not [[now]], Emmi. Not [[today]]. Soon."]], "c": "", "img": true}, {"id": "k03p12", "n": ["Emmi can't sleep. [[Sometimes]] you just know it."], "l": [["s", "Emmi (quietly)", "Something is coming."]], "c": "", "img": true}]]}, {"id": "t0k04", "label": "Kapitel 4 · Breaking Open", "pages": [[{"id": "k04p01", "n": [], "l": [["s", "Mrs Lee", "[[Good morning]], [[class]]! I'm Mrs Lee, your [[class teacher]]. I [[teach]] English, [[art]] and [[history]]."], ["s", "Mrs Lee", "Emmi, the [[desk]] is not a [[chair]]."], ["s", "Emmi", "Oh. [[Sorry]]!"]], "c": "w", "img": true}, {"id": "k04p02", "n": [], "l": [["s", "Mrs Lee", "Open your [[book]], please. And look at the [[board]]. Emmi … where is your [[schoolbag]]?"], ["s", "Emmi", "My what?"], ["t", "Emmi", "Is there a [[Mr Lee]]? Does he [[teach]], too?"]], "c": "", "img": true}, {"id": "k04p03", "n": [], "l": [["s", "Lina", "[[Here you are]]. A [[pencil case]]."], ["s", "Jake", "A [[pencil]]. And a [[rubber]]."], ["s", "Zara", "A pink [[marker]]. And a [[pen]]."], ["s", "Tom", "A [[ruler]]. And a [[sharpener]]."], ["s", "Emmi", "[[Thanks]]! Wow. I'm rich."]], "c": "", "img": true}, {"id": "k04p04", "n": [], "l": [["s", "Lina", "In Brighton, every [[student]] has a [[uniform]]. A [[blazer]] and a [[tie]]."], ["s", "Emmi", "A [[uniform]]? Fluffi in a [[blazer]] and a [[tie]]? Ha!"]], "c": "w", "img": true}], [{"id": "k04p05", "n": [], "l": [["s", "Mrs Lee", "And now: [[art]]! Draw your [[family]] in your [[exercise book]]."]], "c": "", "img": true}, {"id": "k04p06", "n": [], "l": [["s", "Lina", "Who is that?"], ["s", "Emmi", "My [[family]]."], ["s", "Lina", "A mushroom?!"], ["s", "Mrs Lee", "Very nice, Emmi. Now write a [[poem]] about it."], ["s", "Emmi", "A [[poem]]? Ugh."]], "c": "", "img": true}, {"id": "k04p07", "n": [], "l": [["s", "Lina", "Where are your [[parents]], Emmi? Your [[father]] and your [[mother]]?"]], "c": "w", "img": true}, {"id": "k04p08", "n": [], "l": [["s", "Emmi", "Can you keep a secret? My [[mother]] lives under the town. Her name is Armillaria. She is a fungus."], ["s", "Lina", "Your [[mother]] is a MUSHROOM?!"]], "c": "w", "img": true}], [{"id": "k04p09", "n": [], "l": [["s", "Lina", "Are you a mushroom, too?"], ["s", "Emmi", "[[Yes, I am]]. A little bit."], ["s", "Lina", "OK. That's the coolest [[family]] in Greystone."]], "c": "w", "img": true}, {"id": "k04p10", "n": ["Tuesday night. 3:17."], "l": [], "c": "w", "img": true}, {"id": "k04p11", "n": ["CRRRRACK!"], "l": [], "c": "", "img": true}, {"id": "k04p12", "n": [], "l": [["s", "Emmi (quietly)", "There you are. Hello, [[mother]]."], ["x", "", "And tomorrow, the whole town will see her."]], "c": "", "img": true}]]}, {"id": "t0k05", "label": "Kapitel 5 · The Town Is Amazed", "pages": [[{"id": "k05p01", "n": ["Wednesday morning. Greystone wakes up – and there she is."], "l": [["s", "Emmi", "[[Good morning]], Greystone! Look up!"]], "c": "w", "img": true}, {"id": "k05p02", "n": [], "l": [["s", "Boy", "[[Mum]]! [[Dad]]! A giant mushroom!"], ["s", "Girl", "[[Grandma]], look!"], ["s", "Grandma", "In my day, mushrooms were small."]], "c": "", "img": true}, {"id": "k05p03", "n": ["And the [[animals]] love her. A [[cat]], a [[seagull]], a [[bee]] … and [[everyone]] wants a place on the mushroom."], "l": [["s", "Emmi", "Every [[animal]] is happy. Look, Fluffi!"]], "c": "", "img": true}, {"id": "k05p04", "n": [], "l": [["s", "Boy", "My [[pet]] [[hamster]] wants to go out!"], ["s", "Lina", "The [[rabbit]], the [[guinea pig]], the [[budgie]], the [[parrot]] … even the [[fish]] look at Armi!"], ["s", "Tom", "And the [[rat]]?"], ["s", "Lina", "The [[rat]] too. Ugh."]], "c": "w", "img": true}], [{"id": "k05p05", "n": [], "l": [["s", "Tom", "A [[spider]]! And a [[snake]]!"], ["s", "Zara", "They're tiny, Tom. [[You're lucky]], they like you."]], "c": "", "img": true}, {"id": "k05p06", "n": [], "l": [["s", "Lina", "So that's your [[mum]]. Hi, Armi! [[Nice to meet you]]!"], ["s", "Emmi", "She is my [[mum]]. The microbes are like [[brothers]] and [[sisters]]. Or [[cousins]]."], ["s", "Lina", "Big [[family]]. My [[uncle]] and my [[aunt]] are boring. Your [[family]] is cool."]], "c": "", "img": true}, {"id": "k05p07", "n": ["The best playground in Greystone!"], "l": [["s", "Jake", "Wheee! Armi is a slide!"], ["s", "Tom", "Again! [[Everyone]] wants a turn!"], ["s", "Zara", "It's so soft. It smells like a forest."], ["s", "Emmi", "Under the square, her threads hold the ground together. Like a big hug."]], "c": "w", "img": true}, {"id": "k05p08", "n": [], "l": [["s", "Postman", "Thirty years I'm the [[postman]] here. And now this!"], ["x", "", "What a [[smile]]!"], ["s", "Emmi", "Is he [[my friend]] now?"], ["s", "Lina", "I think [[everyone]] is your friend today."]], "c": "w", "img": true}], [{"id": "k05p09", "n": [], "l": [["s", "Steve", "Sorry, kids. Read the sign."], ["s", "Gary", "On Sunday we start building."], ["s", "Jake", "No way! Not on our square!"]], "c": "w", "img": true}, {"id": "k05p10", "n": [], "l": [["s", "Jake", "[[Dad]]! You work for them!"], ["s", "Mr Carter", "Jake, it's my job. It's not easy."]], "c": "w", "img": true}, {"id": "k05p11", "n": [], "l": [["s", "Ms Stone", "Emmi. I have an idea. We can move your [[mum]]. To a park. A nice new [[place]]."], ["s", "Emmi", "Move her? She is not a [[pet]]. She is under the whole town."], ["s", "Ms Stone", "Under the whole town?"], ["s", "Emmi", "Yes. Every street. Every house. Every tree."], ["s", "Ms Stone (quietly)", "Oh."]], "c": "", "img": true}, {"id": "k05p12", "n": ["In the evening, there is a fence around Armi."], "l": [["s", "Emmi (quietly)", "Good night, [[mum]]. I'm here."]], "c": "", "img": true}]]}, {"id": "t0k06", "label": "Kapitel 6 · A Tour of Greystone", "pages": [[{"id": "k06p01", "n": ["Thursday. Behind the fence, Armi looks tired. Her pink is not so pink."], "l": [["s", "Emmi", "Armi? What's wrong?"]], "c": "w", "img": true}, {"id": "k06p02", "n": [], "l": [["s", "Microbes", "She is weak, Emmi. She needs her partner. Her [[tree]]."], ["s", "Emmi", "Which [[tree]]? Where?"], ["s", "Microbes", "Somewhere in this [[town]]. Find it!"]], "c": "", "img": true}, {"id": "k06p03", "n": [], "l": [["s", "Emmi", "Ms Stone! Come with us. [[Let me show you]] something."], ["s", "Ms Stone", "I don't have much time …"], ["s", "Lina", "It's [[a tour of]] Greystone. A special one."]], "c": "", "img": true}, {"id": "k06p04", "n": ["They walk down the [[street]]. [[Cars]], [[bikes]], grey houses."], "l": [["s", "Ms Stone", "I know this [[street]]. I know every [[road]] in this [[town]]."], ["s", "Emmi", "You know what's on top. Not what's under it."]], "c": "w", "img": true}], [{"id": "k06p05", "n": [], "l": [["s", "Emmi", "Look under this [[stone]]."], ["s", "Ms Stone", "What is that?"], ["s", "Emmi", "Armi. She is everywhere. Under every [[street]]. Under every [[place]]."]], "c": "", "img": true}, {"id": "k06p06", "n": [], "l": [["s", "Lina", "And this is the [[park]]. The [[grass]] is grey. No [[flowers]]."], ["s", "Emmi", "Because the ground can't breathe. Stones, stones, stones."], ["s", "Ms Stone (quietly)", "I put those stones here. Five years ago."]], "c": "", "img": true}, {"id": "k06p07", "n": ["They go up to the cliff. [[By the sea]], the wind is cold. Below: the [[beach]], the [[sand]], the big [[sky]]."], "l": [["s", "Lina", "My [[hometown]]. It's not a [[city]]. It's not a [[palace]]. But I like it."]], "c": "w", "img": true}, {"id": "k06p08", "n": [], "l": [["s", "Ms Stone", "I grew up here too. My grandma had a [[garden]] by the [[sea]]."], ["s", "Emmi", "And now?"], ["s", "Ms Stone", "Now it's a car park."]], "c": "w", "img": true}], [{"id": "k06p09", "n": [], "l": [["s", "Emmi", "Wait. I can feel her. This way!"], ["s", "Fluffi", "Woof! Woof!"]], "c": "w", "img": true}, {"id": "k06p10", "n": ["And there it is. A very old [[tree]]. The biggest [[tree]] in the [[world]] – or maybe just in Greystone."], "l": [["s", "Emmi", "Armi's partner!"], ["s", "Lina", "Wow. This is better than [[a tour of]] Brighton."]], "c": "w", "img": true}, {"id": "k06p11", "n": [], "l": [["s", "Ms Stone", "In [[Germany]], [[in England]], everywhere we build on stones. I never think about what's under them."], ["s", "Emmi", "[[The gardens are great]] when the ground can breathe."], ["s", "Ms Stone", "…"]], "c": "", "img": true}, {"id": "k06p12", "n": ["They turn around. Fluffi is not there."], "l": [["s", "Emmi", "Fluffi? … FLUFFI?!"]], "c": "", "img": true}]]}, {"id": "t0k07", "label": "Kapitel 7 · The Message", "pages": [[{"id": "k07p01", "n": ["Friday. No Fluffi. All night."], "l": [["s", "Emmi", "He is not [[at home]]. He doesn't have a home."], ["s", "Lina", "Then we look everywhere. Every [[house]], every [[room]]."]], "c": "w", "img": true}, {"id": "k07p02", "n": [], "l": [["s", "Jake", "I can [[run]]. I take the streets by the sea."], ["s", "Zara", "I make a [[song]]. A [[song]] for Fluffi and for Armi."], ["s", "Tom", "And I … can ring [[doorbells]]!"], ["s", "Lina", "And we tell everyone about Armi. Two jobs in one!"]], "c": "", "img": true}, {"id": "k07p03", "n": ["DING-DONG! The [[doorbell]]."], "l": [["s", "Tom", "Hello! Is a big white dog [[upstairs]]? Or [[downstairs]]?"], ["s", "Woman", "No! Only my cat."], ["s", "Tom", "OK. And did you know? Under your [[house]] lives a giant fungus!"]], "c": "", "img": true}, {"id": "k07p04", "n": ["Jake [[runs]] and [[runs]]. He plays [[football]] with every kid in the street."], "l": [["s", "Jake", "Have you seen a dog? Big, white, red scarf? No? OK – but look at the mushroom!"]], "c": "w", "img": true}], [{"id": "k07p05", "n": [], "l": [["s", "Lina", "I send a [[message]]. To all my friends. And their friends."], ["s", "Emmi", "What is a [[phone]]?"], ["s", "Lina", "Ugh. Later."]], "c": "", "img": true}, {"id": "k07p06", "n": [], "l": [["s", "Emmi", "And we put a picture in every [[parcel]]!"], ["s", "Lina", "The [[postman]] will hate us."], ["s", "Emmi", "No. He likes Armi. Remember his [[smile]]?"]], "c": "", "img": true}, {"id": "k07p07", "n": [], "l": [["s", "Zara (singing)", "Under the stones, there is a [[song]] … she's been here all along …"], ["x", "", "People stop. Some [[dance]]. [[Music]] in Greystone!"]], "c": "w", "img": true}, {"id": "k07p08", "n": [], "l": [["s", "Tom", "And [[balloons]]! Pink ones!"], ["s", "Lina", "Is this a [[game]] now?"], ["s", "Jake", "Best [[game]] ever. Better than [[hang out]] at home and [[watch a film]]."]], "c": "w", "img": true}], [{"id": "k07p09", "n": [], "l": [["s", "Emmi", "My best friend is gone. I don't want a [[hobby]]. I want Fluffi."], ["s", "Lina", "Come to my place? You can sleep [[at my place]] tonight."]], "c": "w", "img": true}, {"id": "k07p10", "n": ["RING-RING! A [[bell]]."], "l": [["s", "Postman", "Is this your dog? He was at the old [[tree]]. All day!"]], "c": "w", "img": true}, {"id": "k07p11", "n": [], "l": [["s", "Emmi", "FLUFFI!"], ["s", "Fluffi", "WOOF! WOOF! WOOF!"], ["s", "Postman (smiling)", "And thank you for the picture in my [[parcel]]. I like your mum."]], "c": "", "img": true}, {"id": "k07p12", "n": ["But somebody has a photo. A photo of Emmi. Glowing. Coming out of the ground."], "l": [], "c": "", "img": true}]]}, {"id": "t0k08", "label": "Kapitel 8 · The Town Splits", "pages": [[{"id": "k08p01", "n": ["Saturday. Emmi's [[picture]] is in the newspaper. Everyone talks about it."], "l": [["s", "Man", "Look at this [[picture]]! A girl out of the ground!"]], "c": "w", "img": true}, {"id": "k08p02", "n": [], "l": [["s", "Woman", "It's [[weird]]. A giant mushroom, a glowing girl …"], ["s", "Man", "It's [[scary]]. Is that [[something]] dangerous?"], ["s", "Old Man", "It's the [[wrong]] [[thing]] in the [[wrong]] place."]], "c": "", "img": true}, {"id": "k08p03", "n": [], "l": [["s", "Girl", "It's [[awesome]]!"], ["s", "Boy", "It's so [[cute]]! Look at the little [[dots]] on the hat!"], ["s", "Flower Woman", "It's [[useful]]. My flowers grow [[double]] now."]], "c": "", "img": true}, {"id": "k08p04", "n": [], "l": [["s", "Emmi", "Armi is [[nice]]. She is not [[scary]] …"], ["x", "", "But her voice is [[small]] now. Very [[small]]. Nobody hears her."]], "c": "w", "img": true}], [{"id": "k08p05", "n": [], "l": [["s", "Jake", "Armi is [[cool]], [[Dad]]! So [[cool]]!"], ["s", "Mr Carter", "Jake. [[Sure]], it's a [[great]] mushroom. But it's my job. And a [[new]] house is [[great]] too."], ["s", "Jake", "A [[new]] house on a [[big]] – no, a [[very big]] mushroom? That's [[boring]]!"]], "c": "", "img": true}, {"id": "k08p06", "n": [], "l": [["s", "Lina", "Here. A [[sandwich]]. And a [[banana]] – with no peel this time."], ["s", "Emmi (quietly)", "Thanks."], ["s", "Lina", "Your voice is so [[small]]. Are you OK?"], ["s", "Emmi (quietly)", "The [[other]] people … they don't like her."]], "c": "", "img": true}, {"id": "k08p07", "n": [], "l": [["s", "Lina", "Hey. I like her. And I like you. That's [[something]], right?"], ["s", "Emmi (smiling a little)", "That's [[something]]."]], "c": "w", "img": true}, {"id": "k08p08", "n": [], "l": [["s", "Boss (on the phone)", "Stone! Sunday is Sunday. Are you [[free]] on Sunday?"], ["s", "Ms Stone", "Yes … but …"], ["s", "Boss (on the phone)", "No 'but'. We start. Is that [[wrong]]?"]], "c": "w", "img": true}], [{"id": "k08p09", "n": [], "l": [["t", "Ms Stone", "Is it [[wrong]]? I'm not [[sure]] any more."]], "c": "w", "img": true}, {"id": "k08p10", "n": ["It's [[cold]] tonight. Emmi can't sleep."], "l": [["s", "Emmi (quietly)", "Armi … I'm sorry. My words are so [[small]]."]], "c": "w", "img": true}, {"id": "k08p11", "n": [], "l": [["s", "Microbes", "Something is coming. Something [[big]]."]], "c": "", "img": true}, {"id": "k08p12", "n": ["At midnight, the diggers come."], "l": [], "c": "", "img": true}]]}, {"id": "t0k09", "label": "Kapitel 9 · The Showdown", "pages": [[{"id": "k09p01", "n": ["Sunday. The diggers are ready. The whole town is here."], "l": [["s", "Steve", "OK, people. We [[go]] now."]], "c": "w", "img": true}, {"id": "k09p02", "n": [], "l": [["s", "Emmi (hoarse)", "No …"], ["s", "Gary", "[[Who]] is that?"], ["s", "Man", "[[What]] does she want?"], ["s", "Woman", "[[Why]] is she here?"]], "c": "", "img": true}, {"id": "k09p03", "n": ["Emmi wants to [[speak]]. But she [[can]] only whisper. Her words are almost gone."], "l": [], "c": "", "img": true}, {"id": "k09p04", "n": [], "l": [["s", "Lina", "[[Listen]]! We [[speak]] for her. We [[understand]] her."], ["s", "Emmi (whispering)", "… she [[needs]] the ground …"], ["s", "Lina", "She says: Armi [[needs]] the ground. She [[can't]] [[live]] under stones."]], "c": "w", "img": true}], [{"id": "k09p05", "n": [], "l": [["s", "Jake", "[[Where]] do the bees [[find]] flowers? [[Where]] do the birds [[fly]]? Here! Because of Armi!"], ["s", "Tom", "And I [[like]] her! I [[don't like]] diggers!"]], "c": "", "img": true}, {"id": "k09p06", "n": [], "l": [["s", "Zara", "Do you [[know]] what's under your house? [[Come]] and [[see]]!"], ["s", "Mr Carter (quietly)", "…Jake [[thinks]] she's right. Maybe I [[think]] so too."]], "c": "", "img": true}, {"id": "k09p07", "n": [], "l": [["s", "Ms Stone", "I [[have]] a plan. Here it is."], ["x", "", "RRRRIP!"], ["s", "Ms Stone", "And now I [[don't have]] a plan."]], "c": "w", "img": true}, {"id": "k09p08", "n": [], "l": [["s", "Ms Stone", "[[Let me show you]] a new one. [[Sit]] down, everyone. Look."], ["x", "", "She draws a house [[with]] the ground. Not on top of it."]], "c": "w", "img": true}], [{"id": "k09p09", "n": ["People [[read]]. People [[think]]. People [[understand]]."], "l": [["s", "Boss (on the phone)", "Stone! What are you doing?!"], ["s", "Ms Stone", "My job. Finally."]], "c": "w", "img": true}, {"id": "k09p10", "n": [], "l": [["s", "Steve", "We [[go]] to work. But a different work."], ["s", "Gary", "Spades, not diggers. No [[problem]]!"]], "c": "w", "img": true}, {"id": "k09p11", "n": [], "l": [["s", "Flower Woman", "[[Who]] [[needs]] seeds? I [[have]] lots!"], ["s", "Everyone", "ME!"]], "c": "", "img": true}, {"id": "k09p12", "n": ["One stone. Ten stones. A hundred stones."], "l": [["s", "Emmi (whispering)", "Armi … do you [[see]] this?"]], "c": "", "img": true}]]}, {"id": "t0k10", "label": "Kapitel 10 · Greengarden", "pages": [[{"id": "k10p01", "n": ["Monday. [[The]] square can breathe. And Armi is pink again – [[so]] pink."], "l": [], "c": "w", "img": true}, {"id": "k10p02", "n": [], "l": [["s", "Emmi", "Hello? … HELLO! My voice! It's back!"], ["s", "Microbes", "Because [[we]] are free [[too]]!"]], "c": "", "img": true}, {"id": "k10p03", "n": [], "l": [["s", "Lina", "Emmi! [[You're]] loud again!"], ["s", "Emmi", "[[Maybe]] [[too]] loud?"], ["s", "Jake", "No such thing!"]], "c": "", "img": true}, {"id": "k10p04", "n": ["[[Some]] plant flowers. [[Some]] plant trees. Mrs Lee is [[here]] [[with]] [[her class]]."], "l": [["s", "Mrs Lee", "Today, [[our]] classroom is outside!"]], "c": "w", "img": true}], [{"id": "k10p05", "n": [], "l": [["s", "Jake", "[[Dad]]? [[You're]] [[here]]?"], ["s", "Mr Carter", "Of course. This is [[our]] town. And [[your]] mushroom is cool."]], "c": "", "img": true}, {"id": "k10p06", "n": [], "l": [["s", "Ms Stone", "The new house stands over the garden, not on it. [[Under]] it: Armi. [[For]] [[us]] and [[for]] her."], ["s", "Emmi", "[[She's]] happy. I can feel it."]], "c": "", "img": true}, {"id": "k10p07", "n": [], "l": [["s", "Flower Woman", "The old name [[isn't]] right any more."], ["s", "Postman", "[[So]] … [[we]] need a new one."]], "c": "w", "img": true}, {"id": "k10p08", "n": [], "l": [["s", "Tom", "GREENGARDEN!"], ["s", "Everyone", "Hooray!"]], "c": "w", "img": true}], [{"id": "k10p09", "n": ["[[A lot of]] music. [[Lots of]] food. [[More]] colours than ever. And the slide is open again!"], "l": [["s", "Zara (singing)", "[[We]] are [[together]], under the sky …"]], "c": "w", "img": true}, {"id": "k10p10", "n": [], "l": [["s", "Lina", "[[They're]] all [[here]] because of you, Emmi."], ["s", "Emmi", "No. Because of [[us]]. [[Together]]."]], "c": "w", "img": true}, {"id": "k10p11", "n": [], "l": [["s", "Lina", "[[Bye]], Emmi! [[See you]] tomorrow!"], ["x", "", "One by one, they all go home. [[But]] not Emmi."]], "c": "", "img": true}, {"id": "k10p12", "n": [], "l": [["s", "Emmi (quietly)", "Fluffi … everyone has a home. [[We]] have [[no]] home."], ["s", "Fluffi", "…woof."]], "c": "", "img": true}]]}];
+let CUR=0,PAGES=CH[0].pages,HAVE=new Set();
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const spk='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const plain=t=>t.replace(/\[\[([^\]]+)\]\]/g,"$1");
+function parse(t){const out=[],re=/\[\[([^\]]+)\]\]/g;let i=0,m;while((m=re.exec(t))){if(m.index>i)out.push({t:t.slice(i,m.index)});const k=m[1].toLowerCase(),d=VOC[k]||["e",""];out.push({v:m[1],l:d[0],de:d[1]});i=re.lastIndex}if(i<t.length)out.push({t:t.slice(i)});return out}
+
+/* speech */
+let voice=null;
+function pick(){const vs=speechSynthesis.getVoices();voice=vs.find(v=>/en-GB/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null}
+if("speechSynthesis" in window){pick();speechSynthesis.onvoiceschanged=pick}
+function say(text){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/…/g,", ").replace(/_+/g,"blank"));if(voice)u.voice=voice;u.lang=voice?voice.lang:"en-GB";u.rate=.85;speechSynthesis.speak(u)}
+const tip=document.getElementById("tip");let tipT;
+function showTip(en,de){tip.innerHTML="<b>"+esc(en)+"</b> = "+esc(de);tip.hidden=false;clearTimeout(tipT);tipT=setTimeout(()=>tip.hidden=true,2600)}
+
+/* storage: progress {r,d}, her answers + check status, hard words. Review mode uses a separate in-memory copy. */
+let REVIEW=false;
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||"null")||d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let PROG=load("emmi-prog",{});
+const MINE=load("emmi-ans",{a:{},c:{},w:{}});   // a: answers, c: check status ok/no, w: last wrong value (for hard-word counting)
+let HARD=load("emmi-hard",{});
+let RV={a:{},c:{},w:{}};
+const S=()=>REVIEW?RV:MINE;
+const saveAns=()=>{if(!REVIEW)save("emmi-ans",MINE)};
+const arr=(o,id)=>(o[id]=o[id]||[]);
+const isDone=i=>!!(PROG[CH[i].id]&&PROG[CH[i].id].d);
+const isOpen=i=>REVIEW||i===0||isDone(i-1);
+function mark(i,k){if(REVIEW)return;const id=CH[i].id;PROG[id]=PROG[id]||{};PROG[id][k]=1;save("emmi-prog",PROG);fillSelect()}
+
+/* gaps in reading order (same order as render) */
+function gapList(){const L=[];PAGES.flat().forEach(p=>[...p.n,...p.l.map(x=>x[2])].forEach(t=>{const segs=parse(t);segs.forEach((s,k)=>{if(s.v)L.push({ans:s.v,l:s.l,de:s.de,ctx:segs.map((x,j)=>j===k?"___":x.v||x.t).join("")})})}));return L}
+
+/* render */
+let mode="read",gi=0;
+function seg(s){
+  if(s.t!==undefined)return esc(s.t);
+  if(mode!=="gaps")return `<span class="v ${s.l}" data-en="${esc(s.v)}" data-de="${esc(s.de)}" role="button" tabindex="0">${esc(s.v)}</span>`;
+  const i=gi++,id=CH[CUR].id,val=arr(S().a,id)[i]||"",st=arr(S().c,id)[i]||"";
+  const hint=s.l==="h"?`<span class="hint">(${esc(s.de)})</span>`:"";
+  return `<span class="gap${val?" filled":""}"><input data-i="${i}" class="${st}" ${st==="ok"?"readonly":""} value="${esc(val)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:${Math.max(s.v.length+2,5)}ch" aria-label="missing word"><span class="tick" aria-hidden="true">✓</span>${hint}</span>`;
+}
+function render(){
+  gi=0;
+  const pages=PAGES.map((pg,pi)=>`<section class="page" aria-label="Page ${pi+1}">`+pg.map(p=>{
+    const cap=p.n.length?`<div class="cap">${p.n.map(x=>"<p>"+parse(x).map(seg).join("")+"</p>").join("")}</div>`:"";
+    const img=HAVE.has(p.id)?`<img src="img/${p.id}.jpg" alt="" loading="lazy" data-id="${p.id}">`:`<span class="missing">picture coming soon</span>`;
+    const lab=REVIEW?`<span class="lab">${p.id.replace(/k0?(\d+)p0?(\d+)/,"K$1 P$2")}</span>`:"";
+    const talk=p.l.length?`<div class="talk">${p.l.map(([k,w,t])=>`<div class="b ${k==="t"?"think":k==="x"?"note":""}">${w?`<div class="who">${esc(w)}<button class="say" data-t="${esc(plain(t))}" aria-label="Listen">${spk}</button></div>`:""}<p class="line">${parse(t).map(seg).join("")}</p></div>`).join("")}</div>`:"";
+    return `<article class="panel ${p.c}"><div class="pic">${img}${lab}${cap}</div>${talk}</article>`;
+  }).join("")+`<span class="no">${pi+1}</span></section>`).join("");
+  const end= mode==="read"
+    ? `<div class="endcard"><p><b>Finished reading?</b> Now put the words back in yourself. The next chapter opens when every word is right.</p><button class="btn" id="toGaps">Fill in the gaps</button></div>`
+    : `<div class="endcard"><p>Filled every gap? Then go to <b>Answers</b> and see which words are right. Red ones: come back and try again.</p><button class="btn" id="toKey2">Check in Answers</button></div>`;
+  book.innerHTML=pages+end;
+  if(mode==="gaps")setCount();
+}
+const norm=s=>s.toLowerCase().replace(/[’`´]/g,"'").replace(/[.,!?"]/g,"").replace(/\s+/g," ").trim();
+function setCount(){const n=gapList().length,A=arr(S().a,CH[CUR].id),f=A.slice(0,n).filter(x=>x&&x.trim()).length;
+  document.getElementById("cnt").textContent=`${f} / ${n}`;
+  const C=arr(S().c,CH[CUR].id),no=C.filter(x=>x==="no").length;
+  document.getElementById("msg").textContent=no?`${no} red – try again`:""}
+
+const book=document.getElementById("book");
+book.addEventListener("input",e=>{const inp=e.target.closest(".gap input");if(!inp)return;const i=+inp.dataset.i,id=CH[CUR].id;
+  arr(S().a,id)[i]=inp.value;if(arr(S().c,id)[i]==="no"){S().c[id][i]="";inp.className=""}
+  inp.parentElement.classList.toggle("filled",!!inp.value.trim());saveAns();setCount()});
+book.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".gap input")){e.preventDefault();const all=[...book.querySelectorAll(".gap input:not([readonly])")],k=all.indexOf(e.target);(all[k+1]||e.target).focus()}});
+book.addEventListener("click",e=>{
+  if(e.target.id==="toGaps"){mark(CUR,"r");setMode("gaps");window.scrollTo(0,0);return}
+  if(e.target.id==="toKey2"){setMode("key");window.scrollTo(0,0);return}
+  const s=e.target.closest(".say");if(s){say(s.dataset.t);return}
+  const v=e.target.closest(".v");if(v){e.stopPropagation();e.preventDefault();say(v.dataset.en);showTip(v.dataset.en,v.dataset.de);return}
+  if(e.target.closest(".gap"))return;
+  const im=e.target.closest(".pic img");if(im){const z=document.getElementById("zoom");z.querySelector("img").src=im.src;z.showModal()}
+});
+document.getElementById("toKey").onclick=()=>{setMode("key");window.scrollTo(0,0)};
+document.getElementById("zclose").onclick=()=>document.getElementById("zoom").close();
+document.getElementById("zoom").addEventListener("click",e=>{if(e.target.id==="zoom")e.target.close()});
+
+/* answers = check her words: green / red, never the solution */
+const order={h:0,m:1,e:2},col={h:"var(--hard)",m:"var(--mid)",e:"var(--easy)"};
+function buildKey(){
+  const id=CH[CUR].id,L=gapList(),A=arr(S().a,id),C=arr(S().c,id),W=arr(S().w,id);
+  let right=0,filled=0;
+  L.forEach((g,i)=>{const v=(A[i]||"").trim();if(!v){C[i]="";return}filled++;
+    if(norm(v)===norm(g.ans)){C[i]="ok";right++}
+    else{C[i]="no";if(!REVIEW&&W[i]!==norm(v)){W[i]=norm(v);const k=g.ans.toLowerCase();HARD[k]=HARD[k]||{w:g.ans,de:g.de,n:0};HARD[k].n++}}});
+  saveAns();if(!REVIEW)save("emmi-hard",HARD);
+  const n=L.length,all=right===n&&n>0;
+  let h=`<h2>Answers</h2>`;
+  if(!filled)h+=`<p>Nothing to check yet. Go to <b>Fill in</b> and put the words back first.</p>`;
+  else{
+    h+=`<p class="sum">${right} of ${n} right${all?" – brilliant!":filled<n?` · ${n-filled} still empty`:""}</p><p>${all?"Every word is right.":"Red words are not right yet. Go back to <b>Fill in</b> and try again."}</p>`;
+    h+=`<div class="tw"><table><tbody>${L.map((g,i)=>{const v=(A[i]||"").trim(),st=!v?"empty":C[i];
+      return `<tr><td class="st" style="color:${st==="ok"?"var(--ok)":st==="no"?"var(--bad)":"var(--muted)"}">${st==="ok"?"✓":st==="no"?"✗":"–"}</td><td><span class="ans ${st}">${v?esc(v):"empty"}</span></td><td class="ctx">${esc(g.ctx)}</td></tr>`}).join("")}</tbody></table></div>`;
+  }
+  if(REVIEW)h+=reviewExtras();
+  document.getElementById("key").innerHTML=h;
+  if(all){const first=!isDone(CUR);mark(CUR,"d");if(!REVIEW)setTimeout(()=>showDone(first),400)}
+}
+function reviewExtras(){
+  const seen=new Map();PAGES.flat().forEach(p=>[...p.n,...p.l.map(x=>x[2])].forEach(t=>parse(t).forEach(s=>{if(s.v&&!seen.has(s.v.toLowerCase()))seen.set(s.v.toLowerCase(),s)})));
+  const hard=Object.values(HARD).sort((a,b)=>b.n-a.n);
+  return `<h3>Hard words (all chapters)</h3>`+(hard.length?`<p>Words that were red at least once. German → type the English word.</p><div class="tw"><table class="prac"><tbody>${hard.map(x=>`<tr><td>${esc(x.de)}</td><td><input data-a="${esc(x.w)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></td><td><button class="say" data-t="${esc(x.w)}" aria-label="Listen">${spk}</button></td><td class="ctx">${x.n}× red</td></tr>`).join("")}</tbody></table></div><p><button class="btn ghost" id="hardclear">Clear hard words</button></p>`:`<p>None yet.</p>`)
+  +`<h3>Word list ${esc(CH[CUR].label)}</h3><div class="tw"><table><tbody>${[...seen.values()].sort((a,b)=>order[a.l]-order[b.l]).map(s=>`<tr><td><span class="lvl" style="background:${col[s.l]}"></span></td><td class="en">${esc(s.v)}</td><td>${esc(s.de)}</td><td><button class="say" data-t="${esc(s.v)}" aria-label="Listen">${spk}</button></td></tr>`).join("")}</tbody></table></div>`
+  +`<p><button class="btn ghost" id="rvreset">Reset Emmi's progress</button></p>`;
+}
+const key=document.getElementById("key");
+key.addEventListener("click",e=>{const b=e.target.closest(".say");if(b){say(b.dataset.t);return}
+  if(e.target.id==="hardclear"){HARD={};save("emmi-hard",HARD);buildKey()}
+  if(e.target.id==="rvreset"&&confirm("Reset all progress and answers on this iPad?")){PROG={};MINE.a={};MINE.c={};MINE.w={};save("emmi-prog",PROG);save("emmi-ans",MINE);fillSelect()}});
+key.addEventListener("keydown",e=>{const inp=e.target.closest(".prac input");if(inp&&e.key==="Enter"){inp.className=norm(inp.value)===norm(inp.dataset.a)?"ok":"no";if(inp.className==="no")say(inp.dataset.a)}});
+key.addEventListener("change",e=>{const inp=e.target.closest(".prac input");if(inp&&inp.value.trim())inp.className=norm(inp.value)===norm(inp.dataset.a)?"ok":"no"});
+
+function showDone(first){
+  const next=CUR+1<CH.length?CUR+1:-1;
+  const d=document.getElementById("done");
+  d.querySelector("h2").textContent=next>=0?"Chapter done!":"Teil 0 done!";
+  d.querySelector("p").textContent=next>=0?(first?`You put back every word. ${CH[next].label} is open now.`:`Every word is right. On to ${CH[next].label}?`):"You finished all ten chapters. Greystone is Greengarden now.";
+  d.querySelector("#goNext").hidden=next<0;d.showModal();
+}
+document.getElementById("goNext").onclick=()=>{document.getElementById("done").close();setChapter(CUR+1);setMode("read");window.scrollTo(0,0)};
+document.getElementById("stay").onclick=()=>document.getElementById("done").close();
+
+/* chapters */
+const chsel=document.getElementById("chsel");
+function fillSelect(){chsel.innerHTML=CH.map((c,i)=>`<option value="${i}" ${isOpen(i)?"":"disabled"}>${isDone(i)?"✓ ":isOpen(i)?"":"🔒 "}${esc(c.label)}</option>`).join("");chsel.value=CUR}
+function setChapter(i){if(!isOpen(i))return;CUR=i;PAGES=CH[i].pages;HAVE=new Set(PAGES.flat().filter(p=>p.img).map(p=>p.id));fillSelect();
+  if(!REVIEW)try{localStorage.setItem("emmi-ch",i)}catch(e){}}
+chsel.onchange=()=>{setChapter(+chsel.value);setMode(mode==="key"?"key":"read");window.scrollTo(0,0)};
+let startCh=0;try{const v=localStorage.getItem("emmi-ch");if(v!==null&&CH[+v])startCh=+v}catch(e){}
+if(!isOpen(startCh))startCh=0;
+setChapter(startCh);
+
+/* hidden review switch: 5 quick taps on the empty space next to the chapter menu, while on Answers */
+let taps=[];
+document.getElementById("tapzone").addEventListener("click",()=>{if(mode!=="key"){taps=[];return}const t=Date.now();taps=taps.filter(x=>t-x<2000);taps.push(t);
+  if(taps.length>=5){taps=[];REVIEW=!REVIEW;RV={a:{},c:{},w:{}};document.body.classList.toggle("review",REVIEW);document.getElementById("reviewnote").hidden=!REVIEW;
+    if(!isOpen(CUR)){let k=0;while(k+1<CH.length&&isOpen(k+1))k++;CUR=k}setChapter(CUR);setMode(mode)}});
+
+/* tabs */
+function setMode(m){mode=m;document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+  document.getElementById("readbar").hidden=m!=="read";document.getElementById("gapbar").hidden=m!=="gaps";
+  book.hidden=m==="key";key.hidden=m!=="key";
+  if(m==="key")buildKey();else render()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{if(b.dataset.mode==="gaps")mark(CUR,"r");setMode(b.dataset.mode)});
+setMode("read");
+</script>
