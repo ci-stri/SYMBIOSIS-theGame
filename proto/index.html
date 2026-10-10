@@ -47,6 +47,9 @@ label.btn{display:inline-block;font-size:22px;border:2px solid var(--green);back
 #confetti{position:absolute;inset:0;pointer-events:none!important;overflow:hidden}
 .bit{position:absolute;width:14px;height:10px;top:-20px;animation:fall 2.2s linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+#joy{position:absolute;left:28px;bottom:90px;width:150px;height:150px;border-radius:50%;background:rgba(251,247,238,.55);border:3px dashed rgba(120,110,95,.7);display:none;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;background:#fbf7ee;border:3px solid #8d8577;box-shadow:2px 3px 0 rgba(0,0,0,.2);pointer-events:none!important}
+#offBtn{position:absolute;right:20px;bottom:100px;display:none;font-size:24px}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#9aa0a6;color:#fff;font-size:30px;z-index:9}
 #load button{margin-top:20px;font-size:30px}
 </style>
@@ -54,10 +57,11 @@ label.btn{display:inline-block;font-size:22px;border:2px solid var(--green);back
 <body>
 <canvas id="gl"></canvas>
 <div id="ui">
-  <div id="hint">Tap the ground to walk.</div>
+  <div id="hint">Tap the ground to walk. Tap Fluffi to ride!</div>
   <div id="top"><button id="musicBtn" title="Musik">♪ on</button></div>
   <div class="bubble" id="bubble"><div id="btext"></div><div class="btns" id="bbtns"></div></div>
   <div class="ring" id="ring"></div>
+  <div id="joy"><div id="knob"></div></div><button id="offBtn">⬇ Get off</button>
   <div id="chips"><span class="lbl">my words:</span></div>
   <div id="panel"><div class="card" id="card"></div></div>
   <div id="confetti"></div>
@@ -73,9 +77,9 @@ const WW = 1920, WH = 1072, HORIZON = 614, K = 0.83;   // person height = K*(y-H
 const EMMI_H = 0.83;                                   // relative to K
 const $ = id => document.getElementById(id);
 
-/* walkable area: band of the square between y 775 and 1040 */
-function xRange(y){ const t=(y-775)/(1040-775); return [420+(60-420)*t, 1650+(1860-1650)*t]; }
-function clampWalk(x,y){ y=Math.max(775,Math.min(1040,y)); const [a,b]=xRange(y); return [Math.max(a,Math.min(b,x)),y]; }
+/* walkable area: band of the square between y 775 and 1000 */
+function xRange(y){ const t=(y-775)/(1000-775); return [420+(60-420)*t, 1650+(1860-1650)*t]; }
+function clampWalk(x,y){ y=Math.max(775,Math.min(1000,y)); const [a,b]=xRange(y); return [Math.max(a,Math.min(b,x)),y]; }
 const depth = y => Math.max(0.05,K*(y-HORIZON)/1);   // pixel height of a 1-unit object
 
 /* ---------- renderer + camera ---------- */
@@ -87,8 +91,7 @@ const cam = new THREE.OrthographicCamera(0,WW,WH,0,-1000,1000);
 let viewW=WW, viewH=WH, camX=0, camY=0;
 function resize(){
   const w=innerWidth,h=innerHeight,a=w/h; renderer.setSize(w,h,false);
-  if(a < WW/WH){ viewH=WH; viewW=WH*a; } else { viewW=WW; viewH=WW/a; }
-  camY = 0;   // bottom aligned (cut sky if too wide)
+  const Z=0.8; viewH=WH*Z; viewW=viewH*a; if(viewW>WW){ viewW=WW; viewH=WW/a; }
   placeCam();
 }
 function placeCam(){ cam.left=camX; cam.right=camX+viewW; cam.bottom=camY; cam.top=camY+viewH; cam.updateProjectionMatrix(); }
@@ -175,7 +178,7 @@ function stickerize(src,border){
 
 /* ---------- procedural paper props ---------- */
 function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return [c,c.getContext('2d')];}
-function speckle(x,w,h,n,col){ for(let i=0;i<n;i++){ x.fillStyle=col(); x.globalAlpha=.25*Math.random(); x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,1+Math.random()*2);} x.globalAlpha=1; }
+function speckle(x,w,h,n,col){ const gco=x.globalCompositeOperation; x.globalCompositeOperation='source-atop'; for(let i=0;i<n;i++){ x.fillStyle=col(); x.globalAlpha=.25*Math.random(); x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,1+Math.random()*2);} x.globalAlpha=1; x.globalCompositeOperation=gco; }
 function drawBox(){
   const [c,x]=mk(320,250);
   x.fillStyle='#b98a5a'; x.beginPath(); x.moveTo(30,90); x.lineTo(290,90); x.lineTo(280,245); x.lineTo(40,245); x.closePath(); x.fill();
@@ -261,11 +264,12 @@ function closePanel(){ $('panel').style.display='none'; }
 /* ---------- load assets ---------- */
 const loader=new THREE.TextureLoader();
 const load=u=>new Promise((res,rej)=>loader.load(u,t=>{t.colorSpace=THREE.NoColorSpace;t.anisotropy=4;res(t);},undefined,rej));
-let emmi,fluffi,box,stone,hole,flower,cat=null;
-const [bgT,emT,flT]=await Promise.all([load('img/bg.jpg'),load('img/emmi.png'),load('img/fluffi.png')]);
+let rider; let emmi,fluffi,box,stone,hole,flower,cat=null;
+const [bgT,emT,flT,riT]=await Promise.all([load('img/bg.jpg'),load('img/emmi.png'),load('img/fluffi.png'),load('img/ride.png')]);
 { const m=new THREE.MeshBasicMaterial({map:bgT,depthTest:false,depthWrite:false}); const bg=new THREE.Mesh(new THREE.PlaneGeometry(WW,WH),m); bg.position.set(WW/2,WH/2,0); bg.renderOrder=-1; scene.add(bg); }
-emmi=new Paper(emT,emT.image.width/emT.image.height,EMMI_H*1.0,{amp:0.8}); emmi.x=960; emmi.y=1040;
-fluffi=new Paper(flT,flT.image.width/flT.image.height,EMMI_H*0.78,{amp:0.9}); fluffi.x=760; fluffi.y=1010;
+emmi=new Paper(emT,emT.image.width/emT.image.height,EMMI_H*1.0,{amp:0.8}); emmi.x=960; emmi.y=1000;
+fluffi=new Paper(flT,flT.image.width/flT.image.height,EMMI_H*1.0,{amp:0.9}); fluffi.x=760; fluffi.y=1010;
+rider=new Paper(riT,riT.image.width/riT.image.height,EMMI_H*1.3,{amp:0.7}); rider.visible=false;
 const boxC=drawBox(); box=new Paper(texFromCanvas(boxC),boxC.width/boxC.height,0.42,{amp:0.4}); box.x=470; box.y=905;
 const holeC=drawHole(); hole=new Paper(texFromCanvas(holeC),holeC.width/holeC.height,0.13,{amp:0,shadow:false,ground:false}); hole.x=1270; hole.y=985; hole.visible=false;
 const stC=drawStone(); stone=new Paper(texFromCanvas(stC),stC.width/stC.height,0.17,{amp:0.25}); stone.x=1270; stone.y=990;
@@ -280,12 +284,14 @@ function worldFromEvent(ev){ const r=canvas.getBoundingClientRect(); const px=(e
 canvas.addEventListener('pointerdown',ev=>{
   if(!S.started||S.busy) return; const [wx,wy]=worldFromEvent(ev);
   $('hint').style.opacity=0;
+  if(S.riding){ const hot=(cat&&cat.hit(wx,wy,20))||box.hit(wx,wy)||(stone.visible&&stone.hit(wx,wy,40))||(flower.visible&&flower.hit(wx,wy));
+    if(hot) dismount(); else { if(rider.hit(wx,wy,0)) say('Woof!'); return; } }
   if(cat && cat.hit(wx,wy,20)){ say(cat.word); bubble(cat,`<b>${cat.word}</b>`); return; }
   if(box.hit(wx,wy)){ walkTo(box.x+150,box.y+40,()=>{ emmi.setFlip(true); boxTalk(); }); return; }
   if(stone.visible && stone.hit(wx,wy,40)){ walkTo(stone.x-120,stone.y+30,()=>{ emmi.setFlip(false); stoneTalk(); }); return; }
   if(flower.visible && flower.hit(wx,wy)){ say('flower'); return; }
   if(emmi.hit(wx,wy,0)){ say('Hello! I am Emmi.'); return; }
-  if(fluffi.hit(wx,wy,0)){ say('Woof! Fluffi.'); return; }
+  if(fluffi.hit(wx,wy,0)){ walkTo(fluffi.x+(fluffi.flip?-1:1)*depth(fluffi.y)*0.25,fluffi.y+5,mount); return; }
   walkTo(wx,wy);
 });
 
@@ -312,7 +318,7 @@ function growFlower(){
 function finale(){ $('hint').textContent='Prototype: done! ✨  Next: more stones, trees, the underground …'; $('hint').style.opacity=1; }
 
 /* ---------- scan flow ---------- */
-let scanCanvas=null;
+let scanCanvas=null, lastScan=null;
 function startScan(){
   hideBubble();
   panel(`<h2>Draw a cat 🐱</h2>Use white paper and a dark pen.<br>Draw big, then take a photo.<div class="row"><label class="btn" for="scanfile">📷 Take photo</label><button onclick="window.__close()">Later</button></div><div class="small" style="margin-top:10px">Tip: good light, paper fills the photo.</div>`);
@@ -322,20 +328,60 @@ $('scanfile').addEventListener('change',async e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   panel('<h2>Cutting out …</h2>✂️'); await new Promise(r=>setTimeout(r,50));
   try{ const img=await loadImg(URL.createObjectURL(f)); scanCanvas=cutout(img); }catch(err){ scanCanvas=null; console.error(err); }
-  if(!scanCanvas){ panel(`<h2>Hmm …</h2>I can't see a drawing.<br>Try dark lines on white paper.<div class="row"><label class="btn" for="scanfile">📷 Again</label><button onclick="window.__close()">Later</button></div>`); return; }
-  panel(`<h2>Your drawing!</h2><img id="preview"><div class="row"><button class="go" id="useBtn">✓ Use it</button><label class="btn" for="scanfile" style="background:#fff;border-color:#8d8577">📷 Again</label></div>`);
-  $('preview').src=scanCanvas.toDataURL(); $('useBtn').onclick=nameIt;
+  if(!scanCanvas){ panel(`<h2>Hmm …</h2>I can't see a drawing.<br>Try dark lines on white paper.<div class="row"><label class="btn" for="scanfile">📷 Again</label>${lastScan?'<button id="selfBtn">✂️ Cut it myself</button>':''}<button onclick="window.__close()">Later</button></div>`); if(lastScan)$('selfBtn').onclick=selfCut; return; }
+  panel(`<h2>Your drawing!</h2><img id="preview"><div class="row"><button class="go" id="useBtn">✓ Use it</button><button id="selfBtn">✂️ Cut it myself</button><label class="btn" for="scanfile" style="background:#fff;border-color:#8d8577">📷 Again</label></div>`);
+  $('preview').src=scanCanvas.toDataURL(); $('useBtn').onclick=nameIt; $('selfBtn').onclick=selfCut;
 });
+function selfCut(){
+  const {nd,w,h}=lastScan; const [src,sx]=mk(w,h); sx.putImageData(new ImageData(new Uint8ClampedArray(nd),w,h),0,0);
+  panel(`<h2>Cut it out ✂️</h2><span class="small">Draw around your picture with your finger.</span><canvas id="cutc" style="max-width:100%;max-height:52vh;touch-action:none;display:block;margin:8px auto;border-radius:4px"></canvas><div class="row"><button class="go" id="cutOk" disabled>✓ Done</button><button id="cutRe">↺</button></div>`);
+  const c=$('cutc'); c.width=w; c.height=h; const x=c.getContext('2d'); let pts=[], drawing=false;
+  const redraw=()=>{ x.drawImage(src,0,0); if(pts.length>1){ x.fillStyle='rgba(255,240,120,.25)'; x.strokeStyle='#e0457b'; x.lineWidth=Math.max(3,w/150); x.setLineDash([12,8]); x.beginPath(); x.moveTo(...pts[0]); for(const p of pts)x.lineTo(...p); if(!drawing){x.closePath();x.fill();} x.stroke(); x.setLineDash([]);} };
+  const pos=e=>{ const r=c.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*w,(e.clientY-r.top)/r.height*h]; };
+  c.onpointerdown=e=>{ c.setPointerCapture(e.pointerId); drawing=true; pts=[pos(e)]; redraw(); };
+  c.onpointermove=e=>{ if(!drawing)return; const p=pos(e), q=pts[pts.length-1]; if(Math.hypot(p[0]-q[0],p[1]-q[1])>3){pts.push(p);redraw();} };
+  c.onpointerup=()=>{ drawing=false; redraw(); $('cutOk').disabled=pts.length<8; };
+  $('cutRe').onclick=()=>{ pts=[]; $('cutOk').disabled=true; redraw(); };
+  $('cutOk').onclick=()=>{
+    let X0=w,X1=0,Y0=h,Y1=0; for(const [a,b] of pts){X0=Math.min(X0,a);X1=Math.max(X1,a);Y0=Math.min(Y0,b);Y1=Math.max(Y1,b);}
+    X0=Math.max(0,X0|0);Y0=Math.max(0,Y0|0);X1=Math.min(w-1,Math.ceil(X1));Y1=Math.min(h-1,Math.ceil(Y1)); const cw=X1-X0+1,ch=Y1-Y0+1;
+    const [o,ox]=mk(cw,ch); ox.beginPath(); ox.moveTo(pts[0][0]-X0,pts[0][1]-Y0); for(const [a,b] of pts)ox.lineTo(a-X0,b-Y0); ox.closePath(); ox.clip(); ox.drawImage(src,-X0,-Y0);
+    scanCanvas=stickerize(o,Math.max(8,Math.round(Math.max(cw,ch)*0.022)));
+    panel(`<h2>Your drawing!</h2><img id="preview"><div class="row"><button class="go" id="useBtn">✓ Use it</button><button id="selfBtn">✂️ Again</button></div>`);
+    $('preview').src=scanCanvas.toDataURL(); $('useBtn').onclick=nameIt; $('selfBtn').onclick=selfCut; };
+  redraw();
+}
 function loadImg(src){ return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}); }
 
 function cutout(img){
   const MAX=900; let w=img.naturalWidth,h=img.naturalHeight; const s=Math.min(1,MAX/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s);
   const [c,x]=mk(w,h); x.drawImage(img,0,0,w,h); const id=x.getImageData(0,0,w,h), d=id.data, N=w*h;
+  // 0. find the sheet of paper (largest bright region, Otsu) so table / paper edges are ignored
+  const L=new Uint8Array(N); const hist=new Float64Array(256);
+  for(let i=0;i<N;i++){ const v=(0.3*d[i*4]+0.59*d[i*4+1]+0.11*d[i*4+2])|0; L[i]=v; hist[v]++; }
+  let sum=0; for(let i=0;i<256;i++)sum+=i*hist[i]; let sB=0,wB=0,oBest=0,thr=128;
+  for(let t=0;t<256;t++){ wB+=hist[t]; if(!wB)continue; const wF=N-wB; if(!wF)break; sB+=t*hist[t]; const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF); if(v>oBest){oBest=v;thr=t;} }
+  const stk=new Int32Array(N); const pl=new Int32Array(N); let pn=0, pbest=0, pbestA=0;
+  for(let i=0;i<N;i++){ if(L[i]<=thr||pl[i])continue; pn++; let sp=0,a=0; stk[sp++]=i; pl[i]=pn;
+    while(sp){ const j=stk[--sp]; a++; const jx=j%w; const nb=[jx>0?j-1:-1,jx<w-1?j+1:-1,j-w,j+w]; for(const q of nb){ if(q<0||q>=N||pl[q]||L[q]<=thr)continue; pl[q]=pn; stk[sp++]=q; } }
+    if(a>pbestA){pbestA=a;pbest=pn;} }
+  let inner=new Uint8Array(N).fill(1), paperM=new Uint8Array(N).fill(1);
+  if(pbestA>N*0.15){
+    // paper = that region with its holes (the drawing) filled
+    const outP=new Uint8Array(N); let sp=0; const pushP=i=>{ if(pl[i]!==pbest&&!outP[i]){outP[i]=1;stk[sp++]=i;} };
+    for(let xx=0;xx<w;xx++){pushP(xx);pushP((h-1)*w+xx);} for(let y=0;y<h;y++){pushP(y*w);pushP(y*w+w-1);}
+    while(sp){ const j=stk[--sp], jx=j%w; if(jx>0)pushP(j-1); if(jx<w-1)pushP(j+1); if(j>=w)pushP(j-w); if(j<N-w)pushP(j+w); }
+    for(let i=0;i<N;i++) paperM[i]=outP[i]?0:1;
+    const notP=new Uint8Array(N); for(let i=0;i<N;i++) notP[i]=1-paperM[i];
+    const grown=dilate(notP,w,h,Math.round(Math.max(w,h)*0.02)); for(let i=0;i<N;i++) inner[i]=grown[i]?0:1;
+  }
+  const notI=new Uint8Array(N); for(let i=0;i<N;i++) notI[i]=1-inner[i];
+  const edgeBand=dilate(notI,w,h,3);
   // 1. paper colour per block (bright percentile) -> white balance / shadow removal
   const B=24, bw=Math.ceil(w/B), bh=Math.ceil(h/B), bg=new Float32Array(bw*bh*3);
   const valid=new Uint8Array(bw*bh);
-  for(let by=0;by<bh;by++)for(let bx=0;bx<bw;bx++){ const L=[]; for(let y=by*B;y<Math.min(h,(by+1)*B);y+=2)for(let xx=bx*B;xx<Math.min(w,(bx+1)*B);xx+=2){const p=(y*w+xx)*4;const mx=Math.max(d[p],d[p+1],d[p+2]),mn=Math.min(d[p],d[p+1],d[p+2]);if(mx-mn<30&&mx>60)L.push([d[p]+d[p+1]+d[p+2],p]);}
-    if(L.length<8) continue; L.sort((a,b)=>a[0]-b[0]); const p=L[Math.floor(L.length*0.85)][1]; const o=(by*bw+bx)*3; bg[o]=d[p];bg[o+1]=d[p+1];bg[o+2]=d[p+2]; valid[by*bw+bx]=1; }
+  for(let by=0;by<bh;by++)for(let bx=0;bx<bw;bx++){ const Lb=[]; for(let y=by*B;y<Math.min(h,(by+1)*B);y+=2)for(let xx=bx*B;xx<Math.min(w,(bx+1)*B);xx+=2){const p=(y*w+xx)*4;const mx=Math.max(d[p],d[p+1],d[p+2]),mn=Math.min(d[p],d[p+1],d[p+2]);if(mx-mn<30&&mx>60&&paperM[y*w+xx])Lb.push([d[p]+d[p+1]+d[p+2],p]);}
+    if(Lb.length<8) continue; Lb.sort((a,b)=>a[0]-b[0]); const p=Lb[Math.floor(Lb.length*0.85)][1]; const o=(by*bw+bx)*3; bg[o]=d[p];bg[o+1]=d[p+1];bg[o+2]=d[p+2]; valid[by*bw+bx]=1; }
   // per block: brightest valid paper sample in a 5x5 neighbourhood (whole RGB triple, keeps paper tint neutral)
   const bg2=new Float32Array(bg.length);
   for(let by=0;by<bh;by++)for(let bx=0;bx<bw;bx++){ const C=[[],[],[]]; for(let r=2;r<=14&&C[0].length<5;r+=3){C[0]=[];C[1]=[];C[2]=[]; for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const X=bx+i,Y=by+j; if(X<0||Y<0||X>=bw||Y>=bh||!valid[Y*bw+X])continue; const q=(Y*bw+X)*3; C[0].push(bg[q]);C[1].push(bg[q+1]);C[2].push(bg[q+2]);}}
@@ -343,12 +389,13 @@ function cutout(img){
   const nd=new Uint8ClampedArray(N*4), ink=new Uint8Array(N);
   for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){ const fx=Math.min(bw-1.001,Math.max(0,xx/B-0.5)), fy=Math.min(bh-1.001,Math.max(0,y/B-0.5)), x0=Math.floor(fx),y0=Math.floor(fy),ax=fx-x0,ay=fy-y0; const p=(y*w+xx)*4;
     let r=0,g=0,bl=0; for(let k=0;k<3;k++){ const v=(bg2[(y0*bw+x0)*3+k]*(1-ax)+bg2[(y0*bw+x0+1)*3+k]*ax)*(1-ay)+(bg2[((y0+1)*bw+x0)*3+k]*(1-ax)+bg2[((y0+1)*bw+x0+1)*3+k]*ax)*ay; const n=Math.min(255,d[p+k]/Math.max(30,v)*255); nd[p+k]=n; if(k==0)r=n;else if(k==1)g=n;else bl=n; }
-    nd[p+3]=255; const lum=0.3*r+0.59*g+0.11*bl, sat=Math.max(r,g,bl)-Math.min(r,g,bl); ink[y*w+xx]=(lum<200||sat>55)?1:0; }
+    nd[p+3]=255; const lum=0.3*r+0.59*g+0.11*bl, sat=Math.max(r,g,bl)-Math.min(r,g,bl); ink[y*w+xx]=((lum<200||sat>55)&&inner[y*w+xx])?1:0; }
+  lastScan={nd,w,h};
   // 2. connect strokes, label components
   const joined=dilate(ink,w,h,3); const lab=new Int32Array(N); let n=0; const areas=[0], touch=[0], bb=[null];
   const st=new Int32Array(N);
   for(let i=0;i<N;i++){ if(!joined[i]||lab[i])continue; n++; let sp=0; st[sp++]=i; lab[i]=n; let a=0,t=0,x0=w,x1=0,y0=h,y1=0;
-    while(sp){ const j=st[--sp]; a++; const jx=j%w, jy=(j/w)|0; if(jx<3||jy<3||jx>w-4||jy>h-4)t++; if(jx<x0)x0=jx;if(jx>x1)x1=jx;if(jy<y0)y0=jy;if(jy>y1)y1=jy;
+    while(sp){ const j=st[--sp]; a++; const jx=j%w, jy=(j/w)|0; if(jx<3||jy<3||jx>w-4||jy>h-4||edgeBand[j])t++; if(jx<x0)x0=jx;if(jx>x1)x1=jx;if(jy<y0)y0=jy;if(jy>y1)y1=jy;
       const nb=[j-1,j+1,j-w,j+w]; for(const q of nb){ if(q<0||q>=N)continue; if((q%w)-(jx)>1||(jx)-(q%w)>1)continue; if(joined[q]&&!lab[q]){lab[q]=n;st[sp++]=q;} } }
     areas.push(a); touch.push(t); bb.push([x0,y0,x1,y1]); }
   // pick: largest component not mostly on border; plus others >12% of it
@@ -396,7 +443,7 @@ function evalName(alts,spoken){
 }
 function placeDrawing(word,isCat){
   closePanel(); const tex=texFromCanvas(scanCanvas); const a=scanCanvas.width/scanCanvas.height;
-  const p=new Paper(tex,a,a>1.3?0.36:0.46,{amp:1}); p.word=word; p.x=emmi.x-60; p.y=Math.min(1040,emmi.y+10); p.hop=Math.random()*3;
+  const p=new Paper(tex,a,a>1.3?0.36:0.46,{amp:1}); p.word=word; p.x=emmi.x-60; p.y=Math.min(1000,emmi.y+10); p.hop=Math.random()*3;
   p.home=isCat?[box.x+20,box.y+25]:[emmi.x-140,emmi.y]; p.homeSet=true; critters.push(p);
   chip(word); confetti();
   if(isCat){ cat=p; S.catDone=true; say('A cat! Well done! The cat has a new home.'); setTimeout(()=>bubble(box,'A <b>cat</b>! 🐱<br>Thank you, Emmi!'),300);
@@ -404,6 +451,20 @@ function placeDrawing(word,isCat){
   } else { if(!cat) cat=p; say(`A ${word}! How nice! But the box still wants a cat.`); bubble(emmi,`A <b>${word}</b>! 💛<br><span class="small">The box still wants a cat …</span>`,[['✏️ Draw a cat',startScan,'go']]); }
 }
 const critters=[];
+
+/* ---------- riding ---------- */
+const joy={x:0,y:0,id:null}, keys={};
+function mount(){ S.riding=true; hideBubble(); rider.x=fluffi.x; rider.y=fluffi.y; rider.setFlip(fluffi.flip?false:true); emmi.visible=false; fluffi.visible=false; rider.visible=true; $('joy').style.display='block'; $('offBtn').style.display='block'; say("Let's go, Fluffi!"); }
+function dismount(){ if(!S.riding)return; S.riding=false; joy.x=joy.y=0; $('knob').style.transform=''; fluffi.x=rider.x; fluffi.y=rider.y; fluffi.setFlip(!rider.flip);
+  const [ex,ey]=clampWalk(rider.x+(rider.flip?1:-1)*depth(rider.y)*0.35, rider.y+8); emmi.x=ex; emmi.y=ey; emmi.visible=true; fluffi.visible=true; rider.visible=false; $('joy').style.display='none'; $('offBtn').style.display='none'; }
+$('offBtn').onclick=e=>{e.stopPropagation();dismount();};
+{ const J=$('joy'), K=$('knob'); const setK=(e)=>{ const r=J.getBoundingClientRect(), R=r.width/2; let dx=e.clientX-r.left-R, dy=e.clientY-r.top-R; const l=Math.hypot(dx,dy); if(l>R){dx*=R/l;dy*=R/l;} joy.x=dx/R; joy.y=dy/R; K.style.transform=`translate(${dx}px,${dy}px)`; };
+  J.addEventListener('pointerdown',e=>{ e.preventDefault(); J.setPointerCapture(e.pointerId); joy.id=e.pointerId; setK(e); });
+  J.addEventListener('pointermove',e=>{ if(e.pointerId===joy.id) setK(e); });
+  const end=e=>{ if(e.pointerId!==joy.id)return; joy.id=null; joy.x=joy.y=0; K.style.transform=''; }; J.addEventListener('pointerup',end); J.addEventListener('pointercancel',end); }
+addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(e.key===' '&&S.started){ S.riding?dismount():null; } });
+addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+function rideInput(){ let x=joy.x,y=joy.y; if(keys['a']||keys['arrowleft'])x=-1; if(keys['d']||keys['arrowright'])x=1; if(keys['w']||keys['arrowup'])y=-1; if(keys['s']||keys['arrowdown'])y=1; return [x,y]; }
 
 /* ---------- loop ---------- */
 const anims=[];
@@ -415,19 +476,25 @@ function tick(now){
     if(dist<6){ S.target=null; emmi.rot=0; emmi.lift=0; const cb=S.onArrive; S.onArrive=null; cb&&cb(); }
     else { const k=Math.min(1,sp/dist); emmi.x+=dx*k; emmi.y+=dy*k; if(Math.abs(dx)>4) emmi.setFlip(dx<0); emmi.walkT=(emmi.walkT||0)+dt*9; emmi.rot=Math.sin(emmi.walkT)*0.045; emmi.lift=Math.abs(Math.sin(emmi.walkT))*depth(emmi.y)*0.03; } }
   else { emmi.rot*=0.85; emmi.lift*=0.8; }
+  // riding
+  if(S.riding){ const [jx,jy]=rideInput(); const m=Math.hypot(jx,jy);
+    if(m>0.08){ const sp=(depth(rider.y)*2.2+200)*dt; const [nx,ny]=clampWalk(rider.x+jx*sp, rider.y+jy*sp*0.55); rider.x=nx; rider.y=ny; if(Math.abs(jx)>0.15) rider.setFlip(jx<0);
+      rider.walkT=(rider.walkT||0)+dt*(8+6*m); rider.rot=Math.sin(rider.walkT)*0.035; rider.lift=Math.abs(Math.sin(rider.walkT))*depth(rider.y)*0.04*m; }
+    else { rider.rot*=0.85; rider.lift*=0.8; } }
   // fluffi follows
-  { const side = emmi.flip?1:-1; const gx=emmi.x+side*depth(emmi.y)*0.55, gy=Math.min(1040,emmi.y-18); const dx=gx-fluffi.x, dy=gy-fluffi.y, d=Math.hypot(dx,dy);
+  if(!S.riding){ const side = emmi.flip?1:-1; const gx=emmi.x+side*depth(emmi.y)*0.55, gy=Math.min(1000,emmi.y-18); const dx=gx-fluffi.x, dy=gy-fluffi.y, d=Math.hypot(dx,dy);
     if(d>depth(emmi.y)*0.3){ const sp=(depth(fluffi.y)*1.3+150)*dt; const k=Math.min(1,sp/d); fluffi.x+=dx*k; fluffi.y+=dy*k; if(Math.abs(dx)>3)fluffi.setFlip(dx>0); fluffi.walkT=(fluffi.walkT||0)+dt*11; fluffi.rot=Math.sin(fluffi.walkT)*0.03; fluffi.lift=Math.abs(Math.sin(fluffi.walkT))*depth(fluffi.y)*0.025; }
     else { fluffi.rot*=0.85; fluffi.lift*=0.8; } }
   // critters hop
   for(const c of critters){ c.hop+=dt; const ph=c.hop%2.4; if(ph<0.5){ const k=ph/0.5; c.lift=Math.sin(k*Math.PI)*depth(c.y)*0.12; c.scaleMulY=1; }
     else { c.lift=0; if(ph>2.35 && !c.moved){ c.moved=true; } }
-    if(ph<0.02){ c.moved=false; c.tx=c.home[0]+(Math.random()-.5)*120; c.ty=Math.min(1040,c.home[1]+(Math.random()-.5)*40); }
+    if(ph<0.02){ c.moved=false; c.tx=c.home[0]+(Math.random()-.5)*120; c.ty=Math.min(1000,c.home[1]+(Math.random()-.5)*40); }
     if(c.tx!==undefined && ph<0.5){ c.x+=(c.tx-c.x)*dt*3; c.y+=(c.ty-c.y)*dt*3; if(Math.abs(c.tx-c.x)>3)c.setFlip(c.tx>c.x?false:true); }
     c.rot=ph<0.5?Math.sin(ph/0.5*Math.PI)*0.12*(c.flip?1:-1):0; }
   for(let i=anims.length-1;i>=0;i--) if(anims[i](clock.t)) anims.splice(i,1);
   // camera follow (horizontal)
-  const want=Math.max(0,Math.min(WW-viewW,emmi.x-viewW/2)); camX+=(want-camX)*Math.min(1,dt*3); placeCam();
+  const pl=S.riding?rider:emmi; const want=Math.max(0,Math.min(WW-viewW,pl.x-viewW/2)); camX+=(want-camX)*Math.min(1,dt*3);
+  const wantY=Math.max(0,Math.min(WH-viewH,(WH-pl.y)-viewH*0.22)); camY+=(wantY-camY)*Math.min(1,dt*3); placeCam();
   for(const p of allPapers) p.update();
   // html anchors
   if(bubbleAnchor){ const [sx,sy]=toScreen(bubbleAnchor.x,bubbleAnchor.y-bubbleAnchor.h-bubbleAnchor.lift-10); const b=$('bubble'); b.style.left=Math.max(140,Math.min(innerWidth-140,sx))+'px'; b.style.top=Math.max(b.offsetHeight+10,sy)+'px'; }
@@ -435,7 +502,7 @@ function tick(now){
   renderer.render(scene,cam); requestAnimationFrame(tick);
 }
 resize(); requestAnimationFrame(tick);
-window.__dbg={toScreen,get box(){return box},get stone(){return stone},get cat(){return cat},S};
+window.__dbg={get fluffi(){return fluffi},get rider(){return rider},toScreen,get box(){return box},get stone(){return stone},get cat(){return cat},S};
 
 $('loadmsg').textContent=''; $('startBtn').style.display='block';
 $('startBtn').onclick=()=>{ $('load').style.display='none'; S.started=true; startMusic(); say('Greystone. Grey houses, grey stones. Everything is grey.'); setTimeout(()=>{ ringAnchor=null; bubble(box,'<i>Meow …?</i>'); },3500); };
