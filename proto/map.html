@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Greystone Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#efe9dc;--ink:#3b3530;--tape:rgba(240,180,190,.85)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#2c2f36;font-family:"Patrick Hand","Chalkboard SE","Comic Sans MS",cursive;color:var(--ink);overflow:hidden}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+svg{width:100vw;height:100vh;display:block}
+.area{cursor:pointer}
+.area .shape{transition:opacity .3s}
+.lbl{font-size:26px;fill:var(--ink)}
+.lvl{font-size:22px;fill:#fff;font-weight:bold}
+#info{z-index:2;position:fixed;left:16px;bottom:16px;width:min(400px,60vw);background:#fbf7ee;border-radius:4px;padding:14px 18px;box-shadow:3px 4px 0 rgba(0,0,0,.25);font-size:21px;line-height:1.25}
+#info:before{content:"";position:absolute;top:-11px;left:24px;width:90px;height:22px;background:var(--tape);transform:rotate(-3deg)}
+#info b{font-size:26px;font-weight:normal}
+#info .de{opacity:.65;font-size:18px;margin-top:4px}
+#top{position:fixed;top:12px;right:12px;display:flex;gap:8px;z-index:2}
+button{font-family:inherit;font-size:20px;border:2px solid #8d8577;background:rgba(255,255,255,.9);border-radius:10px;padding:4px 12px;color:var(--ink)}
+#title{z-index:2;position:fixed;top:10px;left:16px;font-size:34px;color:#fbf7ee;text-shadow:2px 2px 0 rgba(0,0,0,.35)}
+</style>
+</head>
+<body>
+<div id="title">Greystone</div>
+<div id="top"><button id="lvBtn">Level: 1</button><button id="allBtn">show all</button></div>
+<div id="wrap"><svg id="map" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet"></svg></div>
+<div id="info"><b>Greystone</b><div>Tap a place. Grey places open with the next level.</div><div class="de">Grundriss-Entwurf · Namen und Level-Zuordnung sind ein Vorschlag.</div></div>
+<script>
+/* ---------- data: places, level that opens them, chapter link ---------- */
+const AREAS=[
+ {id:'square',  lv:1, name:'Market Square', de:'Marktplatz – Start. Armi, Bank, Brunnen. K1 „The Light“: Emmi wird hier geboren.', x:900,y:560, label:[900,640]},
+ {id:'under',   lv:2, name:'Microbe School', de:'Unter dem Platz (Querschnitt). K2 „Small Wonders“: Emmi schrumpft, Schule der Mikroben.', x:900,y:560, label:[1010,470], under:true},
+ {id:'lane',    lv:3, name:'Grey Lane', de:'Gasse vom Platz nach oben, Linas Haus. K3 „The Sleepless Night“: mit Lina zur Schule.', x:960,y:300, label:[1000,262]},
+ {id:'school',  lv:4, name:'Greystone School', de:'Schule mit Uhrturm. K4 „Breaking Open“: Klassenzimmer, Mrs Lee.', x:1270,y:190, label:[1270,95]},
+ {id:'high',    lv:5, name:'High Street', de:'Einkaufsstraße: Zoogeschäft, Café, Bäcker. Spielplatz am Ende. K5 „The Town Is Amazed“: Ritt auf Fluffi durch die Gasse.', x:1150,y:450, label:[1225,395]},
+ {id:'hall',    lv:6, name:'Town Hall', de:'Rathaus mit GreenBlock-Büro von Ms Stone, Bauzaun am Platz. K6 „A Tour of Greystone“.', x:700,y:390, label:[690,325]},
+ {id:'harbour', lv:7, name:'Harbour Row', de:'Häuserzeile und Hafen mit Booten, Türklingeln. K7 „The Message“: Kinder suchen Helfer.', x:470,y:600, label:[380,470]},
+ {id:'cliff',   lv:8, name:'Lighthouse Cliff', de:'Klippe mit Leuchtturm, Kiosk am Aufgang. K8 „The Town Splits“: Zeitung, zwei Lager.', x:300,y:190, label:[300,95]},
+ {id:'site',    lv:9, name:'Building Site', de:'Baustelle mit Baggern unter dem Platz. K9 „The Showdown“.', x:860,y:775, label:[860,860]},
+ {id:'park',    lv:10,name:'Old Tree Park', de:'Park mit dem alten Baum, später Greengarden. K10 „Greengarden“: der Platz atmet.', x:1370,y:740, label:[1395,860]},
+];
+/* ---------- tiny seeded random ---------- */
+let seed=7; const R=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646;};
+const NS='http://www.w3.org/2000/svg', svg=document.getElementById('map');
+const el=(t,a={},p=svg)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e;};
+const defs=el('defs');
+defs.innerHTML=`
+<filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter>
+<filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 .45  0 0 0 0 .42  0 0 0 0 .38  0 0 0 .18 0"/><feComposite in2="SourceGraphic" operator="in"/><feBlend in="SourceGraphic" mode="multiply"/></filter>
+<filter id="shadow"><feDropShadow dx="3" dy="4" stdDeviation="2" flood-opacity=".25"/></filter>
+<pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><line x1="0" y1="0" x2="0" y2="10" stroke="rgba(60,55,50,.18)" stroke-width="3"/></pattern>
+<pattern id="cob" width="18" height="14" patternUnits="userSpaceOnUse"><rect width="18" height="14" fill="#c9c7c2"/><ellipse cx="5" cy="4" rx="4" ry="3" fill="#bdbbb5"/><ellipse cx="14" cy="10" rx="4" ry="3" fill="#b8b6b0"/></pattern>`;
+/* paper */
+el('rect',{x:10,y:10,width:1580,height:880,rx:14,fill:'#e7e2d6',filter:'url(#paper)'});
+/* sea */
+el('path',{d:'M10 120 L560 120 Q600 300 520 420 Q430 520 520 640 Q600 760 470 890 L10 890 Z',fill:'#9fb0b7',filter:'url(#rough)'});
+el('path',{d:'M560 120 Q600 300 520 420 Q430 520 520 640 Q600 760 470 890',fill:'none',stroke:'#e9e3d3',"stroke-width":10,filter:'url(#rough)'});
+for(let i=0;i<40;i++){const x=40+R()*420,y=160+R()*700;el('path',{d:`M${x} ${y} q8 -6 16 0 q8 6 16 0`,fill:'none',stroke:'rgba(255,255,255,.5)',"stroke-width":2});}
+/* pier */
+el('path',{d:'M520 520 L330 520 L330 545 L505 545',fill:'none',stroke:'#8d8a84',"stroke-width":16,"stroke-linejoin":'round',filter:'url(#rough)'});
+/* cliff */
+el('path',{d:'M120 300 Q140 160 260 130 Q380 110 470 170 Q520 230 470 300 Q380 340 260 330 Q160 340 120 300Z',fill:'#a3a29c',stroke:'#6f6d68',"stroke-width":3,filter:'url(#rough)'});
+el('circle',{cx:300,cy:190,r:22,fill:'#f2efe8',stroke:'#6f6d68',"stroke-width":3});el('circle',{cx:300,cy:190,r:8,fill:'#d98b9a'});
+/* streets */
+const street=(d,w=30)=>{el('path',{d,fill:'none',stroke:'#7f7c76',"stroke-width":w+6,"stroke-linecap":'round',"stroke-linejoin":'round',filter:'url(#rough)'});el('path',{d,fill:'none',stroke:'#d6d3cc',"stroke-width":w,"stroke-linecap":'round',"stroke-linejoin":'round',filter:'url(#rough)'});};
+street('M900 560 Q960 420 960 300 Q955 220 1100 200 L1200 200');        // Grey Lane -> School
+street('M900 560 Q1050 520 1150 450 Q1260 380 1300 300');              // High Street
+street('M900 560 Q760 520 560 560 Q520 580 480 600');                  // Harbour Row
+street('M760 520 Q720 450 700 390 Q600 300 470 260 L330 200',22);      // Cliff path
+street('M900 560 Q960 680 1150 700 Q1280 720 1370 740');               // to park
+street('M900 600 L870 740',22);                                        // to site
+/* squares/plots */
+el('ellipse',{cx:900,cy:560,rx:150,ry:95,fill:'url(#cob)',stroke:'#7f7c76',"stroke-width":5,filter:'url(#rough)'});
+el('rect',{x:770,y:715,width:190,height:120,fill:'#b9ad98',stroke:'#4f6b52',"stroke-width":6,"stroke-dasharray":'14 6',filter:'url(#rough)'});
+el('ellipse',{cx:1380,cy:745,rx:150,ry:105,fill:'#c4c2b8',stroke:'#7f7c76',"stroke-width":3,filter:'url(#rough)'});
+/* old tree (grey) */
+for(let i=0;i<9;i++){const a=i/9*6.28;el('line',{x1:1380,y1:745,x2:1380+Math.cos(a)*70,y2:745+Math.sin(a)*48,stroke:'#6d6a64',"stroke-width":7-i%3,"stroke-linecap":'round'});}
+el('circle',{cx:1380,cy:745,r:16,fill:'#5d5a55'});
+/* fountain + armi (hedgehog-mushroom cap seen from above: lopsided pink, no dots) */
+el('circle',{cx:960,cy:520,r:20,fill:'#d6d3cc',stroke:'#7f7c76',"stroke-width":4});
+el('path',{d:'M850 560 Q840 520 880 505 Q930 495 950 525 Q960 560 920 585 Q870 600 850 560Z',fill:'#ee8fb0',stroke:'#c4587f',"stroke-width":3,filter:'url(#shadow)'});
+el('path',{d:'M865 552 Q880 530 920 528',fill:'none',stroke:'#fbd2df',"stroke-width":4,"stroke-linecap":'round'});
+/* school + town hall */
+el('rect',{x:1190,y:150,width:170,height:90,fill:'#9a978f',stroke:'#5f5c57',"stroke-width":3,filter:'url(#rough)'});
+el('rect',{x:1252,y:132,width:40,height:40,fill:'#7e7b74',stroke:'#5f5c57',"stroke-width":3});el('circle',{cx:1272,cy:152,r:10,fill:'#efe9dc'});
+el('rect',{x:640,y:350,width:120,height:75,fill:'#9a978f',stroke:'#5f5c57',"stroke-width":3,filter:'url(#rough)'});
+/* houses: roofs from above, scattered in blocks, avoiding streets roughly */
+const blocks=[[560,330,180,110],[1000,220,140,70],[980,330,150,90],[1040,450,90,40],[1180,280,90,90],[1320,330,200,170],[560,600,260,90],[560,700,190,170],[960,640,140,50],[980,760,150,110],[1180,560,160,110],[640,180,220,90],[880,120,240,80],[1440,140,130,130],[1180,820,100,60],[300,640,80,0]];
+for(const [bx,by,bw,bh] of blocks){ if(!bh)continue; const n=Math.round(bw*bh/1600); for(let i=0;i<n;i++){ const w=26+R()*22,h=20+R()*16,x=bx+R()*(bw-w),y=by+R()*(bh-h),r=(R()-.5)*18, g=150+R()*40|0;
+  const gg=el('g',{transform:`rotate(${r} ${x+w/2} ${y+h/2})`}); el('rect',{x,y,width:w,height:h,fill:`rgb(${g},${g-2},${g-6})`,stroke:'#5f5c57',"stroke-width":2},gg); el('line',{x1:x,y1:y+h/2,x2:x+w,y2:y+h/2,stroke:'rgba(60,55,50,.45)',"stroke-width":2},gg); } }
+/* ---------- areas (interactive overlay) ---------- */
+let level=1; const groups={};
+for(const a of AREAS){
+  const g=el('g',{class:'area'}); groups[a.id]=g;
+  const lock=el('g',{class:'shape'},g);
+  if(a.under){ el('ellipse',{cx:a.x,cy:a.y,rx:175,ry:120,fill:'none',stroke:'#8b6a3d',"stroke-width":4,"stroke-dasharray":'4 10'},lock); }
+  el('circle',{cx:a.x,cy:a.y,r:a.under?0:60,fill:'url(#hatch)'},lock);
+  const [lx,ly]=a.label; const tag=el('g',{filter:'url(#shadow)'},g);
+  const tw=a.name.length*12+60; el('rect',{x:lx-tw/2,y:ly-22,width:tw,height:40,rx:3,fill:'#fbf7ee',transform:`rotate(${(R()-.5)*5} ${lx} ${ly})`},tag);
+  el('circle',{cx:lx-tw/2+20,cy:ly-2,r:15,fill:'#8d8577'},tag); const lt=el('text',{x:lx-tw/2+20,y:ly+5,"text-anchor":'middle',class:'lvl'},tag); lt.textContent=a.lv;
+  const t=el('text',{x:lx+14,y:ly+7,"text-anchor":'middle',class:'lbl'},tag); t.textContent=a.name;
+  a.lvc=tag.querySelector('circle'); a.lock=lock; a.tag=tag;
+  g.addEventListener('click',()=>show(a));
+}
+function show(a){ const open=a.lv<=level; document.getElementById('info').innerHTML=`<b>${a.name}</b> ${open?'':'🔒'}<div>${open?'Open – go and explore!':'Opens in level '+a.lv+'.'}</div><div class="de">${a.de}</div>`; }
+function apply(){ for(const a of AREAS){ const open=a.lv<=level; a.lock.style.opacity=open?0:1; a.tag.style.opacity=open?1:.55; a.lvc.setAttribute('fill',open?'#4f8a3c':'#8d8577'); } document.getElementById('lvBtn').textContent='Level: '+level; }
+document.getElementById('lvBtn').onclick=()=>{ level=level%10+1; apply(); };
+document.getElementById('allBtn').onclick=()=>{ level=10; apply(); };
+apply();
+</script>
+</body>
+</html>
